@@ -199,21 +199,50 @@ To switch providers in the future:
 
 ## Tech Stack
 
-- [Next.js 14](https://nextjs.org/) - React framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Next.js](https://nextjs.org/) - `14.2.24` - React framework (Security patched version)
+- [React](https://reactjs.org/) - `18.2.0` - UI library
+- [TypeScript](https://www.typescriptlang.org/) - `5.3.3` - Type safety
 - [Supabase](https://supabase.io/) - Authentication & Database
-- [Zustand](https://github.com/pmndrs/zustand) - State management
-- [React Hook Form](https://react-hook-form.com/) - Form handling
-- [Zod](https://github.com/colinhacks/zod) - Schema validation
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
+  - [@supabase/ssr](https://supabase.com/docs/guides/auth/server-side/nextjs) - `0.6.1` - Server-side rendering
+  - [@supabase/supabase-js](https://supabase.com/docs/reference/javascript) - `2.49.1` - JavaScript client
+- [Zustand](https://github.com/pmndrs/zustand) - `4.5.0` - State management
+- [React Hook Form](https://react-hook-form.com/) - `7.50.1` - Form handling
+  - [@hookform/resolvers](https://github.com/react-hook-form/resolvers) - `3.3.4` - Form validation resolvers
+- [Zod](https://github.com/colinhacks/zod) - `3.22.4` - Schema validation
+- [i18next](https://www.i18next.com/) - `23.8.2` - Internationalization
+- [Tailwind CSS](https://tailwindcss.com/) - `3.4.1` - Styling
 - [ShadcN UI](https://ui.shadcn.com/) - UI components
+
+## Version Compatibility
+
+### Node.js Version Requirements
+- **Recommended**: Node.js 18.17.0 - 20.x.x
+- **Current Project**: Tested with Node.js 22.11.0 (may have compatibility issues)
+- **Minimum**: Node.js 18.17.0
+
+### Package Manager
+- npm 10.x.x or
+- yarn 1.22.x or
+- pnpm 8.x.x
+
+### Browser Support
+- Chrome 118+
+- Firefox 117+
+- Safari 17+
+- Edge 118+
+
+### Important Notes
+1. Node.js 22.x.x is not officially supported by Next.js 14.2.24. Consider using Node.js 20.x.x for maximum stability.
+2. All dependencies use semantic versioning. The `^` symbol indicates compatibility with newer minor/patch versions.
+3. The @supabase/auth-helpers-nextjs package has been replaced with @supabase/ssr for better Next.js 14 compatibility.
+4. Next.js version 14.2.24 includes critical security patches for SSRF, Cache Poisoning, and DoS vulnerabilities.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.x or later
-- npm or yarn
+- Node.js 18.17.0 - 20.x.x (recommended)
+- npm 10.x.x or yarn 1.22.x
 - Supabase account
 
 ### Installation
