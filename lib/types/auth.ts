@@ -1,4 +1,49 @@
 import { z } from 'zod';
+import { User as SupabaseUser } from '@supabase/supabase-js'
+
+// Core domain types
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+  userType: 'private' | 'business';
+  businessInfo?: BusinessInfo;
+  preferences?: UserPreferences;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BusinessInfo {
+  companyName: string;
+  businessSize: '1-10' | '11-50' | '51-200' | '201-1000' | '1000+';
+  industry: string;
+  phoneNumber: string;
+}
+
+export interface UserPreferences {
+  language: string;
+  theme: 'light' | 'dark';
+  notifications: NotificationPreferences;
+  privacy: PrivacySettings;
+}
+
+export interface NotificationPreferences {
+  email: boolean;
+  push: boolean;
+  marketing: boolean;
+}
+
+export interface PrivacySettings {
+  profileVisibility: 'public' | 'private';
+  showEmail: boolean;
+  showPhone: boolean;
+}
+
+// Auth types that abstract Supabase
+export type AppUser = Pick<SupabaseUser, 'id' | 'email' | 'user_metadata' | 'app_metadata'> & {
+  profile?: UserProfile;
+}
 
 // Validation schemas
 export const emailSchema = z.string().email('Invalid email address');
@@ -15,7 +60,6 @@ export const userTypeSchema = z.enum(['private', 'business'], {
   required_error: 'Please select an account type',
 });
 
-// Business-specific schema
 export const businessInfoSchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
   businessSize: z.enum(['1-10', '11-50', '51-200', '201-1000', '1000+'], {
@@ -25,19 +69,20 @@ export const businessInfoSchema = z.object({
   phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'),
 });
 
-// Types
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
+// Auth provider interface
+export interface IAuthProvider {
+  signIn(credentials: AuthCredentials): Promise<AppUser | null>;
+  signUp(data: RegisterData): Promise<AppUser | null>;
+  signOut(): Promise<void>;
+  resetPassword(email: string): Promise<void>;
+  updatePassword(oldPassword: string, newPassword: string): Promise<void>;
+  signInWithProvider(provider: 'google' | 'github'): Promise<AppUser | null>;
+  onAuthStateChange(callback: (user: AppUser | null) => void): () => void;
 }
 
-// Validation schemas for forms
+// Form schemas
 export const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: emailSchema,
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
@@ -47,12 +92,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string(),
   name: z.string().min(1, 'Full name is required'),
   userType: userTypeSchema,
-  businessInfo: z.object({
-    companyName: z.string(),
-    businessSize: z.string(),
-    industry: z.string(),
-    phoneNumber: z.string(),
-  }).optional(),
+  businessInfo: businessInfoSchema.optional(),
   acceptTerms: z.boolean().refine((val) => val === true, {
     message: 'You must accept the terms and conditions',
   }),
@@ -62,11 +102,7 @@ export const registerSchema = z.object({
 }).refine(
   (data) => {
     if (data.userType === 'business') {
-      return data.businessInfo && 
-        data.businessInfo.companyName && 
-        data.businessInfo.businessSize && 
-        data.businessInfo.industry && 
-        data.businessInfo.phoneNumber;
+      return data.businessInfo !== undefined;
     }
     return true;
   },
@@ -76,22 +112,22 @@ export const registerSchema = z.object({
   }
 );
 
-// Infer types from schemas
+// Form data types
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
 
-// Store types
-export interface AuthState {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
+// Context type
+export interface AuthContextType {
+  user: AppUser | null;
+  signIn: (credentials: AuthCredentials) => Promise<AppUser | null>;
+  signUp: (data: RegisterData) => Promise<AppUser | null>;
+  signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (oldPassword: string, newPassword: string) => Promise<void>;
-  sendVerificationEmail: () => Promise<void>;
-  verifyEmail: (token: string) => Promise<void>;
-  clearError: () => void;
+  signInWithProvider: (provider: 'google' | 'github') => Promise<AppUser | null>;
 } 

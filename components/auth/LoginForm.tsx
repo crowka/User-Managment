@@ -18,47 +18,35 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { useSupabase } from '@/lib/providers/supabase-provider';
+import { useAuth } from '@/lib/providers/supabase-provider';
+import { loginSchema } from '@/lib/types/auth';
 
-const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters.',
-  }),
-});
+type FormData = z.infer<typeof loginSchema>;
 
 interface LoginFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function LoginForm({ className, ...props }: LoginFormProps) {
-  const { supabase } = useSupabase();
+  const { signIn, signInWithProvider } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormData) {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (error) {
-        throw error;
+      const user = await signIn(values);
+      if (user) {
+        router.push('/dashboard');
       }
-
-      router.push('/dashboard');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -72,16 +60,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
   const loginWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
+      await signInWithProvider('google');
     } catch (error) {
       toast({
         variant: 'destructive',
