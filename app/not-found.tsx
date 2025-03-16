@@ -1,0 +1,20 @@
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
+export default function NotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="mx-auto w-full max-w-[800px] space-y-6 px-4 text-center">
+        <h2 className="text-4xl font-bold tracking-tight sm:text-6xl">
+          404 - Not Found
+        </h2>
+        <p className="text-lg text-muted-foreground sm:text-xl">
+          Could not find the requested resource.
+        </p>
+        <Button asChild>
+          <Link href="/">Return Home</Link>
+        </Button>
+      </div>
+    </div>
+  )
+} 
