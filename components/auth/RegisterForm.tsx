@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { useSupabase } from '@/lib/providers/supabase-provider';
+import { useAuth } from '@/lib/providers/supabase-provider';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -35,7 +35,7 @@ const formSchema = z.object({
 interface RegisterFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function RegisterForm({ className, ...props }: RegisterFormProps) {
-  const { supabase } = useSupabase();
+  const { supabase } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);

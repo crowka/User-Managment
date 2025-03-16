@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { useSupabase } from './supabase-provider'
+import { useAuth } from './supabase-provider'
 import { type Profile } from '@/lib/types/user.types'
 
 type UserContextType = {
@@ -14,7 +14,7 @@ type UserContextType = {
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const { supabase, user } = useSupabase()
+  const { supabase, user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)

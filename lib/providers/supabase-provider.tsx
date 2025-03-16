@@ -97,6 +97,7 @@ export function SupabaseProvider({
 
   const value: AuthContextType = {
     user,
+    supabase,
     signIn: (credentials) => authProvider.signIn(credentials),
     signUp: (data) => authProvider.signUp(data),
     signOut: () => authProvider.signOut(),

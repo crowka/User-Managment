@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { User as SupabaseUser } from '@supabase/supabase-js'
+import { User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js'
 
 // Core domain types
 export interface UserProfile {
@@ -124,6 +124,7 @@ export type RegisterData = z.infer<typeof registerSchema>;
 // Context type
 export interface AuthContextType {
   user: AppUser | null;
+  supabase: SupabaseClient;
   signIn: (credentials: AuthCredentials) => Promise<AppUser | null>;
   signUp: (data: RegisterData) => Promise<AppUser | null>;
   signOut: () => Promise<void>;

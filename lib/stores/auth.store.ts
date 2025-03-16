@@ -1,12 +1,15 @@
 import { create } from 'zustand';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { RegisterData } from '@/lib/types/auth';
 import { createClient } from '@/lib/utils/supabase/client';
 
 interface AuthState {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   error: string | null;
+  setUser: (user: User | null) => void;
+  setSession: (session: Session | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,14 +21,18 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
   return {
     user: null,
+    session: null,
     isLoading: false,
     error: null,
 
+    setUser: (user: User | null) => set({ user }),
+    setSession: (session: Session | null) => set({ session }),
+
     initialize: async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user, session }, error } = await supabase.auth.getSession();
         if (error) throw error;
-        set({ user });
+        set({ user, session });
       } catch (error) {
         console.error('Error initializing auth:', error);
         set({ error: 'Failed to initialize auth' });

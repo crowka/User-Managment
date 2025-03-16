@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/lib/stores/auth.store'
 import { supabase } from '@/lib/supabase'
 
 export function useAuth() {
