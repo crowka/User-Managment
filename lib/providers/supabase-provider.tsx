@@ -12,14 +12,20 @@ type SupabaseContext = {
 
 const Context = createContext<SupabaseContext | undefined>(undefined)
 
-export function SupabaseProvider({ children }: { children: React.ReactNode }) {
+export function SupabaseProvider({ 
+  children,
+  serverSession
+}: { 
+  children: React.ReactNode
+  serverSession?: User | null
+}) {
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
   )
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(serverSession ?? null)
   const router = useRouter()
 
   useEffect(() => {
