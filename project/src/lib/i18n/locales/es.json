@@ -1,0 +1,72 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "success": "Éxito",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Atrás",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos de Servicio",
+    "allRightsReserved": "Todos los derechos reservados."
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "rememberMe": "Recordarme",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetPassword": "Restablecer Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "errors": {
+      "invalidEmail": "Por favor, ingresa un correo electrónico válido",
+      "passwordRequired": "La contraseña es requerida",
+      "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
+      "passwordsMatch": "Las contraseñas no coinciden",
+      "invalidCredentials": "Correo electrónico o contraseña inválidos"
+    }
+  },
+  "profile": {
+    "title": "Configuración del Perfil",
+    "name": "Nombre",
+    "bio": "Biografía",
+    "location": "Ubicación",
+    "website": "Sitio web",
+    "publicProfile": "Perfil Público",
+    "avatar": "Foto de Perfil",
+    "uploadAvatar": "Subir nueva foto",
+    "saveAvatar": "Guardar foto",
+    "removeAvatar": "Eliminar foto",
+    "avatarHelpText": "Formatos admitidos: {{types}} hasta {{size}}",
+    "errors": {
+      "nameRequired": "El nombre es requerido",
+      "invalidWebsite": "Por favor, ingresa una URL válida",
+      "uploadFailed": "Error al subir la imagen",
+      "invalidImage": "Imagen inválida. Por favor, usa {{types}} hasta {{size}}"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones",
+    "privacy": "Privacidad",
+    "account": "Cuenta",
+    "preferences": {
+      "emailNotifications": "Notificaciones por Correo",
+      "emailNotificationsDesc": "Recibe actualizaciones importantes y notificaciones por correo electrónico",
+      "pushNotifications": "Notificaciones Push",
+      "pushNotificationsDesc": "Recibe notificaciones instantáneas en tu navegador",
+      "mobileNotifications": "Notificaciones Móviles",
+      "mobileNotificationsDesc": "Recibe alertas en tu dispositivo móvil",
+      "marketingEmails": "Correos de Marketing",
+      "marketingEmailsDesc": "Recibe contenido promocional y ofertas especiales",
+      "profileVisibility": "Visibilidad del Perfil",
+      "showOnlineStatus": "Mostrar Estado en Línea"
+    }
+  }
+} 

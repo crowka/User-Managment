@@ -1,0 +1,21 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "words": [
+        "supabase",
+        "Supabase",
+        "nextjs",
+        "tailwindcss",
+        "zustand",
+        "middlewares",
+        "signin",
+        "signup",
+        "typecheck"
+    ],
+    "ignorePaths": [
+        "node_modules/**",
+        "dist/**",
+        ".git/**",
+        "package-lock.json"
+    ]
+} 

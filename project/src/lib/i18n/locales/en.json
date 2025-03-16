@@ -1,0 +1,72 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "allRightsReserved": "All rights reserved."
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset Password",
+    "confirmPassword": "Confirm Password",
+    "errors": {
+      "invalidEmail": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "passwordsMatch": "Passwords do not match",
+      "invalidCredentials": "Invalid email or password"
+    }
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "name": "Name",
+    "bio": "Bio",
+    "location": "Location",
+    "website": "Website",
+    "publicProfile": "Public Profile",
+    "avatar": "Profile Picture",
+    "uploadAvatar": "Upload new picture",
+    "saveAvatar": "Save picture",
+    "removeAvatar": "Remove picture",
+    "avatarHelpText": "Supported formats: {{types}} up to {{size}}",
+    "errors": {
+      "nameRequired": "Name is required",
+      "invalidWebsite": "Please enter a valid URL",
+      "uploadFailed": "Failed to upload image",
+      "invalidImage": "Invalid image. Please use {{types}} up to {{size}}"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "account": "Account",
+    "preferences": {
+      "emailNotifications": "Email Notifications",
+      "emailNotificationsDesc": "Receive important updates and notifications via email",
+      "pushNotifications": "Push Notifications",
+      "pushNotificationsDesc": "Get instant notifications in your browser",
+      "mobileNotifications": "Mobile Notifications",
+      "mobileNotificationsDesc": "Receive alerts on your device",
+      "marketingEmails": "Marketing Emails",
+      "marketingEmailsDesc": "Receive promotional content and special offers",
+      "profileVisibility": "Profile Visibility",
+      "showOnlineStatus": "Show Online Status"
+    }
+  }
+} 
