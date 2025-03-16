@@ -1,182 +1,99 @@
-# User Management System Implementation Checklist
+# User Management System
 
-## Project Overview
-This document tracks the implementation of a plug-and-play user management system. The focus is on essential features that are highly useful while maintaining flexibility and ease of integration.
+A modern user management system built with React, TypeScript, and Supabase.
 
-## Testing Setup
-The project uses Vitest as its testing framework, configured with the following features:
-- JSDOM environment for DOM testing
-- React Testing Library for component testing
-- MSW (Mock Service Worker) for API mocking
-- Full TypeScript support
-- Jest-DOM matchers for enhanced DOM assertions
+## Features
 
-Note: While some files may contain Jest-related references or types (like @testing-library/jest-dom), we exclusively use Vitest for running tests. These Jest-related packages are compatible with Vitest through the provided adapters.
+- User authentication (login, register, password reset)
+- Profile management
+- Role-based access control
+- Dark mode support
+- Internationalization (i18n)
+- Responsive design
+- Form validation with Zod
+- Beautiful UI with Tailwind CSS and shadcn/ui
 
-## Core Principles
-- **Plug & Play**: Easy to integrate into any React application
-- **Flexible**: Database agnostic with clean abstractions
-- **Essential First**: Focus on most-needed features
-- **Modern UI**: Clean, accessible interface using shadcn/ui
-- **Type Safe**: Full TypeScript support
+## Prerequisites
 
-## Essential Features
+- Node.js 18 or higher
+- npm or yarn
+- Supabase account and project
 
-### 1. Core User Flows
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Sign up flow with email confirmation | | |
-| [ ] First login with preferences setup | | |
-| [ ] Standard login/logout flow | | |
-| [ ] Password recovery flow | | |
-| [ ] Email change with verification | | |
-| [ ] Profile update flow | | |
+## Setup
 
-### 2. Authentication
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Email/password authentication | | |
-| [ ] Email verification system | | |
-| [ ] Password reset/recovery | | |
-| [ ] Social login (Google, GitHub) | | |
-| [ ] Session management | | |
-| [ ] Remember me functionality | | |
-| [ ] Basic 2FA (optional) | | |
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd user-management
+```
 
-### 3. User Profile & Settings
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Basic profile fields | | |
-| [ ] Profile update validation | | |
-| [ ] Avatar management | | |
-| [ ] Initial preferences setup | | |
-| [ ] Privacy settings | | |
-| [ ] Account deletion | | |
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn
+```
 
-### 4. Email Communications
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Welcome email | | |
-| [ ] Email verification | | |
-| [ ] Password reset emails | | |
-| [ ] Email change confirmation | | |
-| [ ] Account activity notifications | | |
+3. Create a `.env` file in the root directory and add your Supabase credentials:
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-### 5. UI Components
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Sign up form with validation | | |
-| [ ] Login form with remember me | | |
-| [ ] First-time setup wizard | | |
-| [ ] Password reset request form | | |
-| [ ] Password reset completion form | | |
-| [ ] Profile editor | | |
-| [ ] Settings panel | | |
-| [ ] Email verification pages | | |
+4. Start the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-### 6. Security
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Password hashing | | |
-| [ ] Input validation | | |
-| [ ] Rate limiting | | |
-| [ ] JWT handling | | |
-| [ ] Session timeout | | |
-| [ ] Form CSRF protection | | |
+5. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 7. Database & API
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Database interface | | |
-| [ ] Supabase adapter | | |
-| [ ] RESTful endpoints | | |
-| [ ] Type definitions | | |
-| [ ] Error handling | | |
-| [ ] Migration utilities | | |
+## Project Structure
 
-### 8. State Management
-| Feature | Status | Notes |
-|---------|--------|-------|
-| [ ] Auth state | | |
-| [ ] User state | | |
-| [ ] Settings state | | |
-| [ ] Form states | | |
-| [ ] Error handling | | |
+```
+src/
+  ├── components/     # Reusable components
+  │   ├── auth/      # Authentication components
+  │   ├── layout/    # Layout components
+  │   ├── profile/   # Profile components
+  │   └── ui/        # UI components (shadcn/ui)
+  ├── lib/           # Utilities and configurations
+  │   ├── api/       # API configuration
+  │   ├── i18n/      # Internationalization
+  │   ├── stores/    # State management
+  │   └── types/     # TypeScript types
+  ├── pages/         # Page components
+  └── test/          # Test setup and utilities
+```
 
-## Technical Foundation
-- React + TypeScript
-- shadcn/ui + Tailwind
-- Zustand
-- React Hook Form + Zod
-- Axios
-- i18next (basic setup)
+## Available Scripts
 
-## Implementation Steps
-1. **Setup Phase**
-   - [ ] Project structure
-   - [ ] Core dependencies
-   - [ ] Email service setup
-   - [ ] Database setup
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
+- `npm run test:coverage` - Run tests with coverage
+- `npm run test:ui` - Run tests with UI
 
-2. **Core Flows Phase**
-   - [ ] Sign up with email verification
-   - [ ] Login/logout
-   - [ ] Password recovery
-   - [ ] Profile management
+## Testing
 
-3. **Enhancement Phase**
-   - [ ] Social login
-   - [ ] Settings & preferences
-   - [ ] Security features
-   - [ ] Email templates
+The project uses Vitest for testing. Tests are located next to the components they test with the `.test.tsx` extension.
 
-4. **Polish Phase**
-   - [ ] Error handling
-   - [ ] Loading states
-   - [ ] Validation
-   - [ ] Testing
+To run tests:
+```bash
+npm run test
+```
 
-## Integration Guide
-1. Install the package
-2. Configure database adapter
-3. Import and use components
-4. Customize as needed
+## Contributing
 
-## Development Guidelines
-- Keep it simple and focused
-- Maintain clean abstractions
-- Document clearly
-- Test core functionality
-- Consider common use cases
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Project Status
-- [ ] Phase 1: Initial Setup
-- [ ] Phase 2: Core Features
-- [ ] Phase 3: Enhanced Features
-- [ ] Phase 4: Testing & Security
-- [ ] Phase 5: Deployment & Documentation
+## License
 
-## Implementation Priorities
-1. **Core Features** (P0)
-   - Basic authentication
-   - Profile management
-   - Security essentials
-   - Basic preferences
-
-2. **Enhanced Features** (P1)
-   - Localization
-   - Advanced security
-   - Communication preferences
-   - Basic compliance
-
-3. **Advanced Features** (P2)
-   - Advanced compliance
-   - Integration features
-   - Enhanced accessibility
-   - Advanced account management
-
-4. **Optional Features** (P3)
-   - Advanced customization
-   - Additional export formats
-   - Enhanced analytics
-   - Advanced automation 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

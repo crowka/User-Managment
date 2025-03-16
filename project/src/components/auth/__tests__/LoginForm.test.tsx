@@ -1,158 +1,133 @@
-/// <reference path="../../../types/testing-library.d.ts" />
-/// <reference types="vitest" />
-import '@testing-library/jest-dom';
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent, waitFor, render } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from '../LoginForm';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import { AuthState } from '@/lib/types/auth';
 
 // Mock the auth store
 vi.mock('@/lib/stores/auth.store', () => ({
   useAuthStore: vi.fn()
 }));
 
-// Mock the LoginForm component
-vi.mock('../LoginForm', () => {
-  return {
-    __esModule: true,
-    LoginForm: vi.fn().mockImplementation(() => {
-      return null; // This is a dummy implementation, the real one is in __mocks__
-    })
-  };
-});
-
-// Import the mocked LoginForm
-import { LoginForm } from '../LoginForm';
-
-// Mock implementation of useAuthStore
-const mockUseAuthStore = useAuthStore as any;
-
 describe('LoginForm', () => {
-  // Create a mock store state
-  const createMockState = (overrides: Partial<AuthState> = {}): AuthState => ({
-    isAuthenticated: false,
-    user: null,
-    error: null,
-    isLoading: false,
-    login: vi.fn().mockImplementation(() => Promise.resolve()),
-    register: vi.fn().mockImplementation(() => Promise.resolve()),
-    logout: vi.fn().mockImplementation(() => Promise.resolve()),
-    clearError: vi.fn(),
-    resetPassword: vi.fn().mockImplementation(() => Promise.resolve()),
-    updatePassword: vi.fn().mockImplementation(() => Promise.resolve()),
-    sendVerificationEmail: vi.fn().mockImplementation(() => Promise.resolve()),
-    verifyEmail: vi.fn().mockImplementation(() => Promise.resolve()),
-    ...overrides
-  });
-
+  const mockLogin = vi.fn();
+  
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAuthStore.mockReturnValue(createMockState());
-    
-    // Restore the implementation from the __mocks__ folder
-    const { LoginForm: MockedLoginForm } = require('../__mocks__/LoginForm');
-    LoginForm.mockImplementation(MockedLoginForm);
+    (useAuthStore as any).mockReturnValue({
+      login: mockLogin,
+      isLoading: false,
+      error: null
+    });
   });
 
-  it('renders login form correctly', () => {
+  it('should render form elements', () => {
     render(<LoginForm />);
     
+    // Check for form elements
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
-  it('handles successful login', async () => {
-    const mockLogin = vi.fn().mockImplementation(() => Promise.resolve());
-    const mockState = createMockState({ login: mockLogin });
-    mockUseAuthStore.mockReturnValue(mockState);
-
+  it('should handle login submission', async () => {
+    const user = userEvent.setup();
     render(<LoginForm />);
     
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.submit(screen.getByTestId('login-form'));
-
+    // Fill in form
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /login/i }));
+    
+    // Check if login was called with correct data
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
     });
   });
 
-  it('displays error message on login failure', async () => {
-    const errorMessage = 'Invalid credentials';
-    const mockLogin = vi.fn().mockImplementation(() => Promise.reject(new Error(errorMessage)));
-    const mockState = createMockState({
-      login: mockLogin,
-      error: errorMessage
-    });
-    mockUseAuthStore.mockReturnValue(mockState);
-
+  it('should display error messages for invalid inputs', async () => {
+    const user = userEvent.setup();
     render(<LoginForm />);
     
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
+    // Submit empty form
+    await user.click(screen.getByRole('button', { name: /login/i }));
     
-    // Submit the form and wait for the error to be displayed
-    fireEvent.submit(screen.getByTestId('login-form'));
-
+    // Check for validation messages
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(errorMessage);
+      expect(screen.getByText(/email is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
     });
   });
 
-  it('validates email format', async () => {
-    const mockState = createMockState();
-    mockUseAuthStore.mockReturnValue(mockState);
-
+  it('should validate form inputs', async () => {
+    const user = userEvent.setup();
     render(<LoginForm />);
     
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-
-    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.submit(screen.getByTestId('login-form'));
-
+    // Test invalid email
+    await user.type(screen.getByLabelText(/email/i), 'invalid-email');
+    await user.click(screen.getByRole('button', { name: /login/i }));
+    
     await waitFor(() => {
       expect(screen.getByText(/invalid email address/i)).toBeInTheDocument();
     });
-
-    expect(mockState.login).not.toHaveBeenCalled();
-  });
-
-  it('validates password length', async () => {
-    const mockState = createMockState();
-    mockUseAuthStore.mockReturnValue(mockState);
-
-    render(<LoginForm />);
     
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: '123' } });
-    fireEvent.submit(screen.getByTestId('login-form'));
-
+    // Test short password
+    await user.type(screen.getByLabelText(/password/i), '123');
+    await user.click(screen.getByRole('button', { name: /login/i }));
+    
     await waitFor(() => {
-      expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/password must be at least/i)).toBeInTheDocument();
     });
-
-    expect(mockState.login).not.toHaveBeenCalled();
   });
 
-  it('disables submit button while loading', () => {
-    const mockState = createMockState({ isLoading: true });
-    mockUseAuthStore.mockReturnValue(mockState);
-
+  it('should disable button while loading', () => {
+    // Mock loading state
+    (useAuthStore as any).mockReturnValue({
+      login: mockLogin,
+      isLoading: true,
+      error: null
+    });
+    
     render(<LoginForm />);
     
-    const submitButton = screen.getByRole('button');
+    const submitButton = screen.getByRole('button', { name: /logging in/i });
     expect(submitButton).toBeDisabled();
+    expect(submitButton).toHaveTextContent(/logging in/i);
+  });
+
+  it('should toggle password visibility', async () => {
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    
+    const passwordInput = screen.getByLabelText(/password/i);
+    const toggleButton = screen.getByRole('button', { name: /toggle password visibility/i });
+    
+    // Initially password should be hidden
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    
+    // Click toggle button
+    await user.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    
+    // Click toggle button again
+    await user.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
+  it('should display API error messages', () => {
+    // Mock error state
+    (useAuthStore as any).mockReturnValue({
+      login: mockLogin,
+      isLoading: false,
+      error: 'Invalid credentials'
+    });
+    
+    render(<LoginForm />);
+    
+    expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
   });
 }); 
