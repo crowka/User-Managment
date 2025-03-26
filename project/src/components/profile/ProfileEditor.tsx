@@ -3,12 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Cropper from 'react-cropper';
+import 'cropperjs/dist/cropper.css'; // Add this CSS import
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert } from '../ui/alert';
 import { Avatar } from '../ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { useProfileStore } from '@/lib/stores/profile.store'; // Import the profile store
 
 const profileSchema = z.object({
   name: z.string().min(2),
@@ -21,10 +23,11 @@ const profileSchema = z.object({
 type ProfileData = z.infer<typeof profileSchema>;
 
 export function ProfileEditor() {
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const { profile, updateProfile, uploadAvatar, isLoading, error } = useProfileStore(); // Use the profile store
+  const [avatar, setAvatar] = useState<string | null>(profile?.avatarUrl || null);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
-  const cropperRef = useRef<any>(null);
+  const cropperRef = useRef<Cropper>(null); // Fix the type
 
   const {
     register,
@@ -32,6 +35,13 @@ export function ProfileEditor() {
     formState: { errors },
   } = useForm<ProfileData>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: profile?.name || '',
+      email: profile?.email || '',
+      bio: profile?.bio || '',
+      location: profile?.location || '',
+      website: profile?.website || '',
+    }
   });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,16 +57,23 @@ export function ProfileEditor() {
   };
 
   const handleCropComplete = () => {
-    const cropper = cropperRef.current?.cropper;
-    if (cropper) {
-      const croppedCanvas = cropper.getCroppedCanvas();
+    if (cropperRef.current && cropperRef.current.cropper) {
+      const croppedCanvas = cropperRef.current.cropper.getCroppedCanvas();
       setAvatar(croppedCanvas.toDataURL());
       setIsAvatarDialogOpen(false);
     }
   };
 
   const onSubmit = async (data: ProfileData) => {
-    console.log('Profile data:', { ...data, avatar });
+    try {
+      await updateProfile(data);
+      
+      if (avatar && avatar !== profile?.avatarUrl) {
+        await uploadAvatar(avatar);
+      }
+    } catch (submitError) {
+      console.error('Error updating profile:', submitError);
+    }
   };
 
   return (
@@ -123,7 +140,13 @@ export function ProfileEditor() {
           )}
         </div>
 
-        <Button type="submit">Save Profile</Button>
+        {error && (
+          <Alert variant="destructive">{error}</Alert>
+        )}
+
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Saving...' : 'Save Profile'}
+        </Button>
       </form>
 
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
