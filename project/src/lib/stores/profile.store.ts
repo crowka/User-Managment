@@ -34,36 +34,45 @@ export const useProfileStore = create<ProfileState>((set) => ({
     }
   },
 
-  uploadAvatar: async (file: File) => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      // Convert image to base64
-      const base64Image = await fileToBase64(file);
-      
-      // Send to API
-      const response = await api.post('/profile/avatar', {
-        avatar: base64Image,
-        filename: file.name
-      });
-      
-      // Update profile with new avatar URL
-      set((state) => ({
-        profile: state.profile
-          ? { ...state.profile, avatarUrl: response.data.avatarUrl }
-          : null,
-        isLoading: false
-      }));
-      
-      return response.data.avatarUrl;
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to upload avatar',
-        isLoading: false,
-      });
-      return null;
+uploadAvatar: async (fileOrBase64: File | string) => {
+  try {
+    set({ isLoading: true, error: null });
+    
+    let base64Image: string;
+    let filename: string | undefined;
+    
+    // Convert file to base64 if it's a File object
+    if (fileOrBase64 instanceof File) {
+      base64Image = await fileToBase64(fileOrBase64);
+      filename = fileOrBase64.name;
+    } else {
+      // It's already a base64 string
+      base64Image = fileOrBase64;
     }
-  },
+    
+    // Send to API
+    const response = await api.post('/profile/avatar', {
+      avatar: base64Image,
+      filename
+    });
+    
+    // Update profile with new avatar URL
+    set((state) => ({
+      profile: state.profile
+        ? { ...state.profile, avatarUrl: response.data.avatarUrl }
+        : null,
+      isLoading: false
+    }));
+    
+    return response.data.avatarUrl;
+  } catch (error) {
+    set({
+      error: error instanceof Error ? error.message : 'Failed to upload avatar',
+      isLoading: false,
+    });
+    return null;
+  }
+}
 
   removeAvatar: async () => {
     try {
