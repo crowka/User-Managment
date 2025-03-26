@@ -1,3 +1,4 @@
+// project/src/components/theme/ThemeProvider.tsx
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -67,4 +68,4 @@ export const useTheme = () => {
     throw new Error('useTheme must be used within a ThemeProvider');
 
   return context;
-}; 
+};
