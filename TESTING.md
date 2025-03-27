@@ -93,53 +93,197 @@ const { req, res } = createMocks({
 
 ## Test Coverage
 
-The following areas are covered by tests:
+# User Management System - End User Functionality Overview
 
-### Components
-- Auth Component: Tests for sign-in, sign-up, form validation, and error handling
-- Profile Component: Tests for profile display, updates, avatar uploads, and error handling
+## 1. User Types and Registration Paths
 
-### Library Functions
-- Supabase Client: Tests for client initialization, service role client, and error handling
-- Database Operations: Tests for CRUD operations on user profiles
+### Personal User Path
+- Standard personal user registration with email/password
+- Basic profile information collection (name, email, password)
+- Email verification process
+- Terms acceptance during registration
 
-### Middleware
-- Auth Middleware: Tests for authentication checks, admin role verification, and error handling
+### Business User Path
+- Corporate user registration with extended business information
+- Company details collection (name, size, industry, website)
+- Business contact information (position, department)
+- Company address and VAT ID verification
+- Option for company validation/verification
+- Corporate profile management tools
 
-### API Routes
-- Admin Users API: Tests for user retrieval, error handling, and method validation
+## 2. Authentication Methods
 
-## Adding New Tests
+### Traditional Authentication
+- Email/password login
+- "Remember me" functionality 
+- Password reset flow
 
-When adding new tests:
+### Single Sign-On (SSO) Options
+- **Business-oriented SSO**: 
+  - Microsoft (Office/Azure)
+  - Google Workspace
+  - LinkedIn
+- **General SSO**:
+  - GitHub
+  - Facebook
+  - Twitter
+  - Apple
 
-1. Create a test file in the appropriate directory under `__tests__`
-2. Import the necessary testing utilities and the component/function to test
-3. Mock external dependencies (especially Supabase)
-4. Write test cases covering the main functionality and edge cases
-5. Run the tests to ensure they pass
+### Multi-Factor Authentication
+- Two-factor authentication (2FA) setup
+- Multiple 2FA methods (TOTP, SMS, Email)
+- Backup codes generation
+- 2FA recovery process
 
-## Best Practices
+## 3. Profile Management
 
-- Clear mocks before each test using `jest.clearAllMocks()` in a `beforeEach` block
-- Test both success and error scenarios
-- For components, test rendering, user interactions, and state changes
-- For API routes, test different HTTP methods and authentication requirements
-- Use descriptive test names that explain what is being tested
+### Personal Profile Features
+- Basic profile editing (name, bio)
+- Personal avatar upload with cropping
+- Location and contact information
+- Public/private profile toggle
 
-## Current Test Status
+### Corporate Profile Features
+- Company profile management
+- Company logo/avatar management
+- Department and position information
+- Team member connection/visibility
+- Business domain verification
+- Corporate address management
 
-All tests are currently passing. The test suite covers:
+## 4. Subscription and Licensing
 
-- Basic authentication flows
-- User profile management
-- Admin API functionality
-- Middleware authentication and authorization
-- Database operations
+### Personal Tiers
+- **Free Tier**: Basic personal profile, standard authentication
+- **Basic Tier**: Additional profile features, data export
+- **Premium Tier**: Advanced security features, priority support
 
-## Future Improvements
+### Business Tiers
+- **Business Basic**: Small company features, limited team members
+- **Business Premium**: Enhanced business features, expanded team
+- **Enterprise Tier**: 
+  - Team management capabilities
+  - Advanced analytics and reporting
+  - Custom integration options
+  - Admin console for user management
+  - Role-based access control
+  - Organization-wide policies
 
-- Increase test coverage for all components and pages
-- Add integration tests for complete user flows
-- Implement end-to-end testing with Cypress or Playwright
-- Set up continuous integration to run tests automatically 
+### Payment Options
+- Monthly/yearly billing cycles
+- Team/seat-based pricing
+- Payment method management
+- Invoice generation and download
+- Subscription management
+
+## 5. Security and Privacy Controls
+
+### Personal Security
+- Basic privacy controls
+- Profile visibility settings
+- Personal data management
+
+### Business Security
+- Role-based access control (RBAC)
+- Team permission management
+- Admin controls for corporate accounts
+- Organization-wide security policies
+- Session management for team members
+- Corporate data protection controls
+
+## 6. Notification Preferences
+
+### Communication Channels
+- Email notifications
+- Push notifications (web)
+- Mobile notifications
+- SMS notifications
+
+### Business-specific Notifications
+- Team activity alerts
+- Admin action notifications
+- Security policy alerts
+- Organization-wide announcements
+
+## 7. Data Management
+
+### Personal Data
+- Personal profile export options
+- Individual account settings
+
+### Business Data
+- Corporate data export capabilities
+- Team data management
+- Organizational data controls
+- Batch operations for team members
+- Data retention policies
+
+## 8. Platform and Device Support
+
+### Web Platform
+- Desktop browser experience
+- Responsive web design
+
+### Mobile Support
+- iOS optimized interface
+- Android optimized interface
+- Native mobile experiences
+
+## User Flow Test Paths
+
+### Personal User Flows
+
+1. **New Personal User Registration**
+   - Personal sign up → Email verification → Profile completion → Dashboard
+
+2. **Personal Authentication Flow**
+   - Personal login → (Optional 2FA) → Personal dashboard
+
+3. **Personal Profile Management**
+   - Dashboard → Personal profile → Edit profile → Upload avatar → Save changes
+
+4. **Personal Subscription Management**
+   - Plans page → Select personal plan → Payment → Access features
+
+### Business User Flows
+
+1. **New Business Registration**
+   - Business sign up option → Company details → Verification → Business dashboard
+
+2. **Business Authentication Flow**
+   - Business login → (Business SSO options) → (2FA) → Business dashboard
+
+3. **Corporate Profile Setup**
+   - Business dashboard → Company profile → Add team info → Add company details
+
+4. **Business Subscription Setup**
+   - Business plans page → Select team size → Enterprise features → Payment
+
+5. **Team Member Management**
+   - Admin console → Add team members → Assign roles → Set permissions
+
+6. **Business Security Configuration**
+   - Business settings → Security policies → 2FA requirements → Session limits
+
+## Cross-cutting Test Scenarios
+
+1. **User Type Transition**
+   - Test converting personal account to business account
+   - Verify business-specific fields appear after conversion
+
+2. **SSO Connection Testing**
+   - Test all SSO providers for both personal and business accounts
+   - Verify business-specific SSO options (Microsoft, Google Workspace)
+
+3. **Multi-device Testing**
+   - Verify experiences across desktop, tablet and mobile
+   - Test platform-specific optimizations
+
+4. **Subscription Tier Feature Testing**
+   - Verify feature availability across different tiers
+   - Test business-specific features in enterprise tiers
+   - Verify licensing limits (e.g., team member counts)
+
+5. **Security Policy Enforcement**
+   - Test business admin-enforced security policies
+   - Verify organization-wide settings propagation
