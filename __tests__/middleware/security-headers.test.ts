@@ -61,4 +61,4 @@ describe('Security Headers Middleware', () => {
 
     consoleSpy.mockRestore();
   });
-}); 
+});
