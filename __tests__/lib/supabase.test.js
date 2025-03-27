@@ -3,9 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 // Mock before importing the module that uses it
 jest.mock('@supabase/supabase-js');
 
-// Import after mocking
-import { getServiceSupabase, supabase } from '../../lib/supabase';
-
 describe('Supabase Client', () => {
   const mockSupabaseUrl = 'https://test.supabase.co';
   const mockSupabaseAnonKey = 'test-anon-key';
