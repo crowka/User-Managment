@@ -12,13 +12,14 @@ describe('Auth Middleware', () => {
   });
 
   test('allows authenticated requests to proceed', async () => {
-    // Mock authenticated user
+    // Mock authenticated user with exact structure expected by the middleware
     supabase.auth.getUser.mockResolvedValue({
       data: {
         user: {
           id: 'user123',
           email: 'test@example.com',
           role: 'authenticated',
+          app_metadata: { role: 'user' },
         },
       },
       error: null,
@@ -50,12 +51,16 @@ describe('Auth Middleware', () => {
     expect(res._getStatusCode()).toBe(200);
     expect(JSON.parse(res._getData())).toEqual({ success: true });
     
-    // Check if the user was added to the request
+    // Check if the user was added to the request with the correct structure
     expect(req.user).toEqual({
       id: 'user123',
       email: 'test@example.com',
       role: 'authenticated',
+      app_metadata: { role: 'user' },
     });
+    
+    // Verify Supabase was called with the right token
+    expect(supabase.auth.getUser).toHaveBeenCalledWith('valid-token');
   });
 
   test('rejects requests without authorization header', async () => {
@@ -86,7 +91,7 @@ describe('Auth Middleware', () => {
   });
 
   test('rejects requests with invalid token', async () => {
-    // Mock auth error
+    // Mock auth error with exact structure expected by the middleware
     supabase.auth.getUser.mockResolvedValue({
       data: { user: null },
       error: { message: 'Invalid token' },
@@ -119,6 +124,9 @@ describe('Auth Middleware', () => {
     expect(JSON.parse(res._getData())).toEqual({ 
       error: 'Unauthorized: Invalid token' 
     });
+    
+    // Verify Supabase was called with the right token
+    expect(supabase.auth.getUser).toHaveBeenCalledWith('invalid-token');
   });
 
   test('handles server errors during authentication', async () => {
@@ -156,6 +164,7 @@ describe('Auth Middleware', () => {
 
   test('checks for admin role when required', async () => {
     // Mock authenticated user with admin role
+    // Note the exact structure including app_metadata.role which is critical
     supabase.auth.getUser.mockResolvedValue({
       data: {
         user: {
@@ -236,5 +245,49 @@ describe('Auth Middleware', () => {
     expect(JSON.parse(res._getData())).toEqual({ 
       error: 'Forbidden: Admin access required' 
     });
+  });
+  
+  test('correctly extracts token from different authorization formats', async () => {
+    // Test cases for different authorization header formats
+    const testCases = [
+      { header: 'Bearer token123', expectedToken: 'token123' },
+      { header: 'token123', expectedToken: 'token123' }
+    ];
+    
+    for (const testCase of testCases) {
+      // Clear mocks before each test case
+      jest.clearAllMocks();
+      
+      // Mock authenticated user
+      supabase.auth.getUser.mockResolvedValue({
+        data: {
+          user: {
+            id: 'user123',
+            email: 'test@example.com',
+            role: 'authenticated',
+          },
+        },
+        error: null,
+      });
+      
+      const handler = jest.fn().mockImplementation((req, res) => {
+        res.status(200).json({ success: true });
+      });
+      
+      const protectedHandler = withAuth(handler);
+      
+      const { req, res } = createMocks({
+        method: 'GET',
+        headers: {
+          authorization: testCase.header,
+        },
+      });
+      
+      await protectedHandler(req, res);
+      
+      // Verify the token was extracted correctly
+      expect(supabase.auth.getUser).toHaveBeenCalledWith(testCase.expectedToken);
+      expect(handler).toHaveBeenCalled();
+    }
   });
 });
