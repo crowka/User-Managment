@@ -1,53 +1,93 @@
-// File: __tests__/components/Profile.test.js
+// __tests__/components/Profile.test.js
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Profile } from '../../project/src/components/profile/Profile';
 
-// Import our standardized mock
+// Import our utility functions
+import { setupTestEnvironment, mockNextRouter } from '../utils/environment-setup';
+import { renderWithProviders, createMockFile } from '../utils/component-testing-utils';
+import { createMockUser, createMockProfile, mockStorage } from '../utils/testing-utils';
+
+// Import and use our standardized mock
 jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
 import { supabase } from '../../project/src/lib/supabase';
 
-// Mock data
-const mockUser = {
-  id: 'test-user-id',
-  email: 'test@example.com',
-};
-
-const mockProfile = {
-  id: 'test-user-id',
-  full_name: 'John Doe',
-  website: 'https://example.com',
-  avatar_url: 'https://example.com/avatar.jpg',
-};
-
 describe('Profile Component', () => {
-  let user;
-
+  // Setup test environment and router
+  let cleanup;
+  let router;
+  
+  beforeAll(() => {
+    cleanup = setupTestEnvironment();
+    router = mockNextRouter();
+  });
+  
+  afterAll(() => {
+    if (cleanup) cleanup();
+  });
+  
   beforeEach(() => {
     jest.clearAllMocks();
-    user = userEvent.setup();
-    
-    // Set up the mocks for this test suite
-    supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
-    supabase.from().single.mockResolvedValue({ data: mockProfile, error: null });
-    supabase.storage.from().getPublicUrl.mockReturnValue({ data: { publicUrl: mockProfile.avatar_url } });
+  });
+
+  // Create mock user and profile data
+  const mockUser = createMockUser();
+  const mockProfileData = createMockProfile({
+    id: mockUser.id,
+    full_name: 'John Doe',
+    website: 'https://example.com',
+    avatar_url: 'https://example.com/avatar.jpg'
   });
 
   test('renders profile form with user data', async () => {
-    render(<Profile />);
+    // Setup authentication and profile data mocks
+    supabase.auth.getUser.mockResolvedValue({ 
+      data: { user: mockUser }, 
+      error: null 
+    });
+    
+    supabase.from().single.mockResolvedValue({ 
+      data: mockProfileData, 
+      error: null 
+    });
+    
+    // Setup storage mocks
+    mockStorage('avatars', {
+      getPublicUrl: { data: { publicUrl: mockProfileData.avatar_url } }
+    });
 
+    // Render with our utility
+    const { user } = renderWithProviders(<Profile />);
+
+    // Wait for data to load
     await waitFor(() => {
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
       expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument();
-      expect(screen.getByAltText(/avatar/i)).toHaveAttribute('src', mockProfile.avatar_url);
+      expect(screen.getByAltText(/avatar/i)).toHaveAttribute('src', mockProfileData.avatar_url);
     });
   });
 
   test('handles profile update', async () => {
+    // Setup initial data
+    supabase.auth.getUser.mockResolvedValue({ 
+      data: { user: mockUser }, 
+      error: null 
+    });
+    
+    supabase.from().single.mockResolvedValue({ 
+      data: mockProfileData, 
+      error: null 
+    });
+    
+    // Mock storage
+    mockStorage('avatars', {
+      getPublicUrl: { data: { publicUrl: mockProfileData.avatar_url } }
+    });
+
+    // Setup update mock
     const updatedProfile = {
-      ...mockProfile,
+      ...mockProfileData,
       full_name: 'Jane Smith',
       website: 'https://updated-example.com',
     };
@@ -57,7 +97,8 @@ describe('Profile Component', () => {
       error: null,
     });
 
-    render(<Profile />);
+    // Render component
+    const { user } = renderWithProviders(<Profile />);
 
     // Wait for initial data to load
     await waitFor(() => {
@@ -85,9 +126,28 @@ describe('Profile Component', () => {
   });
 
   test('handles avatar upload', async () => {
-    const file = new File(['test'], 'test-avatar.jpg', { type: 'image/jpeg' });
+    // Setup initial data
+    supabase.auth.getUser.mockResolvedValue({ 
+      data: { user: mockUser }, 
+      error: null 
+    });
     
-    render(<Profile />);
+    supabase.from().single.mockResolvedValue({ 
+      data: mockProfileData, 
+      error: null 
+    });
+    
+    // Mock storage
+    mockStorage('avatars', {
+      getPublicUrl: { data: { publicUrl: mockProfileData.avatar_url } },
+      upload: { data: { path: `${mockUser.id}/avatar.jpg` }, error: null }
+    });
+
+    // Create a mock file using our utility
+    const file = createMockFile('test-avatar.jpg', 'image/jpeg', 1024);
+    
+    // Render component
+    const { user } = renderWithProviders(<Profile />);
 
     // Wait for component to load
     await waitFor(() => {
@@ -109,17 +169,36 @@ describe('Profile Component', () => {
   });
 
   test('displays error message on update failure', async () => {
+    // Setup initial data
+    supabase.auth.getUser.mockResolvedValue({ 
+      data: { user: mockUser }, 
+      error: null 
+    });
+    
+    supabase.from().single.mockResolvedValue({ 
+      data: mockProfileData, 
+      error: null 
+    });
+    
+    // Mock storage
+    mockStorage('avatars', {
+      getPublicUrl: { data: { publicUrl: mockProfileData.avatar_url } }
+    });
+
+    // Mock update error
     supabase.from().upsert.mockResolvedValueOnce({
       data: null,
       error: { message: 'Failed to update profile' },
     });
 
-    render(<Profile />);
+    // Render component
+    const { user } = renderWithProviders(<Profile />);
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
     });
 
+    // Submit form without changes
     await user.click(screen.getByRole('button', { name: /update profile/i }));
 
     await waitFor(() => {
@@ -128,15 +207,28 @@ describe('Profile Component', () => {
   });
 
   test('handles avatar upload error', async () => {
-    const file = new File(['test'], 'test-avatar.jpg', { type: 'image/jpeg' });
-    
-    // Mock storage upload error
-    supabase.storage.from().upload.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Failed to upload avatar' },
+    // Setup initial data
+    supabase.auth.getUser.mockResolvedValue({ 
+      data: { user: mockUser }, 
+      error: null 
     });
     
-    render(<Profile />);
+    supabase.from().single.mockResolvedValue({ 
+      data: mockProfileData, 
+      error: null 
+    });
+    
+    // Mock storage with upload error
+    mockStorage('avatars', {
+      getPublicUrl: { data: { publicUrl: mockProfileData.avatar_url } },
+      upload: { data: null, error: { message: 'Failed to upload avatar' } }
+    });
+    
+    // Create a mock file
+    const file = createMockFile('test-avatar.jpg');
+    
+    // Render component
+    const { user } = renderWithProviders(<Profile />);
 
     // Wait for component to load
     await waitFor(() => {
