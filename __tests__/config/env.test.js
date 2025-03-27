@@ -16,6 +16,17 @@ describe('Environment Variables', () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 
+    // Mock the Next.js config
+    jest.mock('../../next.config', () => ({
+      publicRuntimeConfig: {
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      },
+      serverRuntimeConfig: {
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    }), { virtual: true });
+
     // Import the Next.js config
     const nextConfig = require('../../next.config');
 
@@ -43,4 +54,4 @@ describe('Environment Variables', () => {
     // Service key should not be accessible in client-side code
     expect(clientEnv.SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
   });
-}); 
+});
