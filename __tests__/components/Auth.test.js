@@ -1,3 +1,5 @@
+// File: __tests__/components/Auth.test.js
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Auth } from '../../project/src/components/auth/Auth';
@@ -24,6 +26,9 @@ describe('Auth Component', () => {
   });
 
   test('handles sign in correctly', async () => {
+    // Mock successful sign in
+    supabase.auth.signIn.mockResolvedValueOnce({ data: { user: { id: 'test-id' } }, error: null });
+    
     render(<Auth />);
     
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -39,7 +44,9 @@ describe('Auth Component', () => {
   });
 
   test('handles sign in error', async () => {
-    supabase.auth.signIn.mockRejectedValueOnce(new Error('Invalid credentials'));
+    // Mock sign in error
+    supabase.auth.signIn.mockResolvedValueOnce({ data: null, error: { message: 'Invalid credentials' } });
+    
     render(<Auth />);
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -52,9 +59,14 @@ describe('Auth Component', () => {
   });
 
   test('handles sign up correctly', async () => {
+    // Mock successful sign up
+    supabase.auth.signUp.mockResolvedValueOnce({ data: { user: { id: 'new-user-id' } }, error: null });
+    
     render(<Auth />);
     
+    // Switch to sign up mode
     await user.click(screen.getByRole('button', { name: /sign up/i }));
+    
     await user.type(screen.getByLabelText(/email/i), 'newuser@example.com');
     await user.type(screen.getByLabelText(/password/i), 'newpassword123');
     await user.click(screen.getByRole('button', { name: /sign up/i }));
@@ -68,10 +80,14 @@ describe('Auth Component', () => {
   });
 
   test('handles sign up error', async () => {
-    supabase.auth.signUp.mockRejectedValueOnce(new Error('Email already exists'));
+    // Mock sign up error
+    supabase.auth.signUp.mockResolvedValueOnce({ data: null, error: { message: 'Email already exists' } });
+    
     render(<Auth />);
 
+    // Switch to sign up mode
     await user.click(screen.getByRole('button', { name: /sign up/i }));
+    
     await user.type(screen.getByLabelText(/email/i), 'existing@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
     await user.click(screen.getByRole('button', { name: /sign up/i }));
@@ -93,6 +109,7 @@ describe('Auth Component', () => {
   test('validates password length', async () => {
     render(<Auth />);
     
+    await user.type(screen.getByLabelText(/email/i), 'valid@example.com');
     await user.type(screen.getByLabelText(/password/i), 'short');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
