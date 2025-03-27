@@ -11,7 +11,11 @@ describe('Rate Limit Middleware', () => {
   });
 
   it('should allow requests within rate limit', async () => {
-    const { req, res } = createMocks();
+    const { req, res } = createMocks({
+      ip: '127.0.0.1',
+      method: 'GET',
+      url: '/api/test'
+    });
     const next = jest.fn();
     const middleware = rateLimit();
     const mockRedis = Redis.fromEnv();
@@ -28,7 +32,11 @@ describe('Rate Limit Middleware', () => {
   });
 
   it('should block requests exceeding rate limit', async () => {
-    const { req, res } = createMocks();
+    const { req, res } = createMocks({
+      ip: '127.0.0.1',
+      method: 'GET',
+      url: '/api/test'
+    });
     const next = jest.fn();
     const middleware = rateLimit();
     const mockRedis = Redis.fromEnv();
@@ -50,6 +58,9 @@ describe('Rate Limit Middleware', () => {
 
   it('should use custom key generator if provided', async () => {
     const { req, res } = createMocks({
+      ip: '127.0.0.1',
+      method: 'GET',
+      url: '/api/test',
       headers: {
         'x-user-id': '12345',
       },
@@ -69,7 +80,11 @@ describe('Rate Limit Middleware', () => {
   });
 
   it('should use custom handler if provided', async () => {
-    const { req, res } = createMocks();
+    const { req, res } = createMocks({
+      ip: '127.0.0.1',
+      method: 'GET',
+      url: '/api/test'
+    });
     const next = jest.fn();
     const customHandler = jest.fn();
     const middleware = rateLimit({ handler: customHandler });
@@ -85,7 +100,11 @@ describe('Rate Limit Middleware', () => {
   });
 
   it('should handle Redis errors gracefully', async () => {
-    const { req, res } = createMocks();
+    const { req, res } = createMocks({
+      ip: '127.0.0.1',
+      method: 'GET',
+      url: '/api/test'
+    });
     const next = jest.fn();
     const middleware = rateLimit();
     const mockRedis = Redis.fromEnv();
