@@ -1,26 +1,6 @@
+// Import our standardized mock
+jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
 import { supabase, getServiceSupabase } from '../../lib/supabase';
-
-// Mock the supabase client
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-  },
-  getServiceSupabase: jest.fn().mockReturnValue({
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-  }),
-}));
 
 describe('Database Operations', () => {
   beforeEach(() => {
@@ -231,4 +211,4 @@ describe('Database Operations', () => {
     expect(error).toBeNull();
     expect(data).toEqual({ success: true });
   });
-}); 
+});
