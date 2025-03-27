@@ -1,3 +1,5 @@
+// File: __tests__/components/Profile.test.js
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -28,7 +30,7 @@ describe('Profile Component', () => {
     user = userEvent.setup();
     
     // Set up the mocks for this test suite
-    supabase.auth.user.mockReturnValue(mockUser);
+    supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     supabase.from().single.mockResolvedValue({ data: mockProfile, error: null });
     supabase.storage.from().getPublicUrl.mockReturnValue({ data: { publicUrl: mockProfile.avatar_url } });
   });
@@ -39,7 +41,7 @@ describe('Profile Component', () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
       expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument();
-      expect(screen.getByRole('img', { name: /avatar/i })).toHaveAttribute('src', mockProfile.avatar_url);
+      expect(screen.getByAltText(/avatar/i)).toHaveAttribute('src', mockProfile.avatar_url);
     });
   });
 
@@ -87,6 +89,12 @@ describe('Profile Component', () => {
     
     render(<Profile />);
 
+    // Wait for component to load
+    await waitFor(() => {
+      expect(screen.getByAltText(/avatar/i)).toBeInTheDocument();
+    });
+
+    // Find the file input and upload a file
     const input = screen.getByLabelText(/upload avatar/i);
     await user.upload(input, file);
 
@@ -116,6 +124,31 @@ describe('Profile Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/failed to update profile/i)).toBeInTheDocument();
+    });
+  });
+
+  test('handles avatar upload error', async () => {
+    const file = new File(['test'], 'test-avatar.jpg', { type: 'image/jpeg' });
+    
+    // Mock storage upload error
+    supabase.storage.from().upload.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Failed to upload avatar' },
+    });
+    
+    render(<Profile />);
+
+    // Wait for component to load
+    await waitFor(() => {
+      expect(screen.getByAltText(/avatar/i)).toBeInTheDocument();
+    });
+
+    // Find the file input and upload a file
+    const input = screen.getByLabelText(/upload avatar/i);
+    await user.upload(input, file);
+
+    await waitFor(() => {
+      expect(screen.getByText(/failed to upload avatar/i)).toBeInTheDocument();
     });
   });
 });
