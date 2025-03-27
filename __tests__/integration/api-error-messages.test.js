@@ -28,30 +28,30 @@ describe('API Error Messages', () => {
     // Test different API error scenarios
     const errorScenarios = [
       {
-        apiError: { message: 'Invalid login credentials', code: 'INVALID_CREDENTIALS' },
+        apiError: { message: 'Invalid login credentials', code: 'invalid_credentials' },
         expectedMessage: /email or password is incorrect/i
       },
       {
-        apiError: { message: 'Email not confirmed', code: 'EMAIL_NOT_CONFIRMED' },
+        apiError: { message: 'Email not confirmed', code: 'email_not_confirmed' },
         expectedMessage: /please verify your email/i
       },
       {
-        apiError: { message: 'Rate limit exceeded', code: 'RATE_LIMIT_EXCEEDED' },
+        apiError: { message: 'Rate limit exceeded', code: 'rate_limit_exceeded' },
         expectedMessage: /too many login attempts/i
       },
       {
-        apiError: { message: 'Network error', code: 'NETWORK_ERROR' },
+        apiError: { message: 'Network error', code: 'network_error' },
         expectedMessage: /unable to connect to the server/i
       },
       {
-        apiError: { message: 'Service unavailable', code: 'SERVICE_UNAVAILABLE' },
+        apiError: { message: 'Service unavailable', code: 'service_unavailable' },
         expectedMessage: /service is temporarily unavailable/i
       }
     ];
     
     for (const scenario of errorScenarios) {
       // Mock API error response
-      supabase.auth.signIn.mockResolvedValueOnce({
+      supabase.auth.signInWithPassword = jest.fn().mockResolvedValueOnce({
         data: null,
         error: scenario.apiError
       });
@@ -63,6 +63,12 @@ describe('API Error Messages', () => {
       await waitFor(() => {
         expect(screen.getByText(scenario.expectedMessage)).toBeInTheDocument();
       });
+      
+      // Clear the form for next scenario
+      await user.clear(screen.getByLabelText(/email/i));
+      await user.clear(screen.getByLabelText(/password/i));
+      await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+      await user.type(screen.getByLabelText(/password/i), 'password123');
     }
   });
   
@@ -143,5 +149,76 @@ describe('API Error Messages', () => {
       const errorItems = screen.getAllByRole('listitem');
       expect(errorItems.length).toBeGreaterThan(1);
     });
+  });
+  
+  test('shows recovery options for account-related errors', async () => {
+    // Render login form
+    render(<LoginForm />);
+    
+    // Enter credentials
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'wrong-password');
+    
+    // Mock login error
+    supabase.auth.signInWithPassword = jest.fn().mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Invalid login credentials', code: 'invalid_credentials' }
+    });
+    
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    
+    // Check for recovery options
+    await waitFor(() => {
+      expect(screen.getByText(/forgot your password/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /reset password/i })).toBeInTheDocument();
+    });
+    
+    // Try another error scenario
+    await user.clear(screen.getByLabelText(/email/i));
+    await user.clear(screen.getByLabelText(/password/i));
+    await user.type(screen.getByLabelText(/email/i), 'unverified@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    
+    // Mock verification error
+    supabase.auth.signInWithPassword = jest.fn().mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Email not confirmed', code: 'email_not_confirmed' }
+    });
+    
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    
+    // Check for resend verification option
+    await waitFor(() => {
+      expect(screen.getByText(/resend verification email/i)).toBeInTheDocument();
+    });
+  });
+  
+  test('handles unexpected API errors gracefully', async () => {
+    // Render login form
+    render(<LoginForm />);
+    
+    // Enter credentials
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    
+    // Mock unexpected error with no code
+    supabase.auth.signInWithPassword = jest.fn().mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Unknown server error', status: 500 }
+    });
+    
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    
+    // Check for generic error message
+    await waitFor(() => {
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    });
+    
+    // Check for error code information for support
+    expect(screen.getByText(/support reference/i)).toBeInTheDocument();
+    expect(screen.getByText(/500/i)).toBeInTheDocument();
   });
 });
