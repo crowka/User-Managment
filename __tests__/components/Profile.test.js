@@ -2,6 +2,9 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Profile } from '../../project/src/components/profile/Profile';
+
+// Import our standardized mock
+jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
 import { supabase } from '../../project/src/lib/supabase';
 
 // Mock data
@@ -17,36 +20,17 @@ const mockProfile = {
   avatar_url: 'https://example.com/avatar.jpg',
 };
 
-// Mock Supabase client
-jest.mock('../../project/src/lib/supabase', () => ({
-  supabase: {
-    auth: {
-      user: () => mockUser,
-      onAuthStateChange: jest.fn(),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      upsert: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: mockProfile, error: null }),
-    })),
-    storage: {
-      from: jest.fn(() => ({
-        upload: jest.fn().mockResolvedValue({ data: { path: 'avatar.jpg' }, error: null }),
-        getPublicUrl: jest.fn(() => ({ data: { publicUrl: mockProfile.avatar_url } })),
-      })),
-    },
-  },
-}));
-
 describe('Profile Component', () => {
   let user;
 
   beforeEach(() => {
     jest.clearAllMocks();
     user = userEvent.setup();
+    
+    // Set up the mocks for this test suite
+    supabase.auth.user.mockReturnValue(mockUser);
+    supabase.from().single.mockResolvedValue({ data: mockProfile, error: null });
+    supabase.storage.from().getPublicUrl.mockReturnValue({ data: { publicUrl: mockProfile.avatar_url } });
   });
 
   test('renders profile form with user data', async () => {
@@ -134,4 +118,4 @@ describe('Profile Component', () => {
       expect(screen.getByText(/failed to update profile/i)).toBeInTheDocument();
     });
   });
-}); 
+});
