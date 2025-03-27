@@ -1,15 +1,9 @@
 const { createMocks } = require('node-mocks-http');
 const { withAuth } = require('../../middleware/auth');
-const { supabase } = require('../../lib/supabase');
 
-// Mock the supabase client
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getUser: jest.fn(),
-    },
-  },
-}));
+// Import and use our standardized mock
+jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
+const { supabase } = require('../../lib/supabase');
 
 describe('Auth Middleware', () => {
   beforeEach(() => {
@@ -243,4 +237,4 @@ describe('Auth Middleware', () => {
       error: 'Forbidden: Admin access required' 
     });
   });
-}); 
+});
