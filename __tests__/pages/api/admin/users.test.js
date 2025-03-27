@@ -1,10 +1,9 @@
 import { createMocks } from 'node-mocks-http';
 import usersHandler from '../../../../pages/api/admin/users';
-import { getServiceSupabase } from '../../../../lib/supabase';
 
-jest.mock('../../../../lib/supabase', () => ({
-  getServiceSupabase: jest.fn(),
-}));
+// Import and use our standardized mock
+jest.mock('../../../../lib/supabase', () => require('../../../__mocks__/supabase'));
+import { getServiceSupabase } from '../../../../lib/supabase';
 
 describe('Admin Users API', () => {
   const mockUsers = [
@@ -15,7 +14,7 @@ describe('Admin Users API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Mock Supabase client
+    // Configure the mock for this test suite
     getServiceSupabase.mockImplementation(() => ({
       from: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
@@ -104,4 +103,4 @@ describe('Admin Users API', () => {
       error: 'Error fetching users',
     });
   });
-}); 
+});
