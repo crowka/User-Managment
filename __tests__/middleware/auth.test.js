@@ -1,27 +1,40 @@
+// __tests__/middleware/auth.test.js
+
 const { createMocks } = require('node-mocks-http');
 const { withAuth } = require('../../middleware/auth');
+
+// Import our utility functions
+const { setupTestEnvironment } = require('../utils/environment-setup');
+const { createMockUser, createMockAdminUser } = require('../utils/testing-utils');
 
 // Import and use our standardized mock
 jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
 const { supabase } = require('../../lib/supabase');
 
 describe('Auth Middleware', () => {
+  // Setup test environment
+  let cleanup;
+  
+  beforeAll(() => {
+    cleanup = setupTestEnvironment();
+  });
+  
+  afterAll(() => {
+    if (cleanup) cleanup();
+  });
+  
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
   });
 
   test('allows authenticated requests to proceed', async () => {
+    // Use our utility to create a mock user
+    const mockUser = createMockUser();
+    
     // Mock authenticated user with exact structure expected by the middleware
     supabase.auth.getUser.mockResolvedValue({
-      data: {
-        user: {
-          id: 'user123',
-          email: 'test@example.com',
-          role: 'authenticated',
-          app_metadata: { role: 'user' },
-        },
-      },
+      data: { user: mockUser },
       error: null,
     });
 
@@ -52,12 +65,7 @@ describe('Auth Middleware', () => {
     expect(JSON.parse(res._getData())).toEqual({ success: true });
     
     // Check if the user was added to the request with the correct structure
-    expect(req.user).toEqual({
-      id: 'user123',
-      email: 'test@example.com',
-      role: 'authenticated',
-      app_metadata: { role: 'user' },
-    });
+    expect(req.user).toEqual(mockUser);
     
     // Verify Supabase was called with the right token
     expect(supabase.auth.getUser).toHaveBeenCalledWith('valid-token');
@@ -163,16 +171,13 @@ describe('Auth Middleware', () => {
   });
 
   test('checks for admin role when required', async () => {
+    // Use our utility to create a mock admin user
+    const mockAdminUser = createMockAdminUser();
+    
     // Mock authenticated user with admin role
-    // Note the exact structure including app_metadata.role which is critical
     supabase.auth.getUser.mockResolvedValue({
       data: {
-        user: {
-          id: 'admin123',
-          email: 'admin@example.com',
-          role: 'authenticated',
-          app_metadata: { role: 'admin' },
-        },
+        user: mockAdminUser
       },
       error: null,
     });
@@ -205,15 +210,13 @@ describe('Auth Middleware', () => {
   });
 
   test('rejects non-admin users when admin is required', async () => {
+    // Use our utility to create a regular user
+    const mockUser = createMockUser();
+    
     // Mock authenticated user without admin role
     supabase.auth.getUser.mockResolvedValue({
       data: {
-        user: {
-          id: 'user123',
-          email: 'user@example.com',
-          role: 'authenticated',
-          app_metadata: { role: 'user' },
-        },
+        user: mockUser
       },
       error: null,
     });
@@ -258,14 +261,13 @@ describe('Auth Middleware', () => {
       // Clear mocks before each test case
       jest.clearAllMocks();
       
+      // Create a mock user
+      const mockUser = createMockUser();
+      
       // Mock authenticated user
       supabase.auth.getUser.mockResolvedValue({
         data: {
-          user: {
-            id: 'user123',
-            email: 'test@example.com',
-            role: 'authenticated',
-          },
+          user: mockUser
         },
         error: null,
       });
