@@ -1,18 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Auth } from '../../project/src/components/auth/Auth';
-import { supabase } from '../../project/src/lib/supabase';
 
-// Mock the supabase client
-jest.mock('../../project/src/lib/supabase', () => ({
-  supabase: {
-    auth: {
-      signIn: jest.fn(),
-      signUp: jest.fn(),
-      signOut: jest.fn(),
-    },
-  },
-}));
+// Import our standardized mock
+jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
+import { supabase } from '../../project/src/lib/supabase';
 
 describe('Auth Component', () => {
   let user;
@@ -106,4 +98,4 @@ describe('Auth Component', () => {
 
     expect(screen.getByText(/password must be at least/i)).toBeInTheDocument();
   });
-}); 
+});
