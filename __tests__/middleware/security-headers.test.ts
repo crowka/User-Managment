@@ -44,12 +44,27 @@ describe('Security Headers Middleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  test('should set custom headers if provided', async () => {
+    const customCSP = "default-src 'self'; script-src 'self'";
+    const middleware = securityHeaders({
+      contentSecurityPolicy: customCSP,
+      xFrameOptions: 'DENY'
+    });
+    const next = jest.fn();
+
+    await middleware(req, res, next);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Security-Policy', customCSP);
+    expect(res.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
+    expect(next).toHaveBeenCalled();
+  });
+
   test('should handle errors gracefully', async () => {
     const middleware = securityHeaders();
     const next = jest.fn().mockImplementation(() => {
       throw new Error('Test error');
     });
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
     await middleware(req, res, next);
 
