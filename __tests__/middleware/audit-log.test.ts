@@ -1,6 +1,9 @@
 import { createMocks } from 'node-mocks-http';
 import { NextApiRequest } from 'next';
 import { auditLog } from '../../middleware/audit-log';
+
+// Import our standardized mock
+jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
 import { supabase } from '../../lib/supabase';
 
 // Extend NextApiRequest to include user property
@@ -10,16 +13,6 @@ interface ExtendedRequest extends NextApiRequest {
     role: string;
   };
 }
-
-// Mock Supabase client
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({ data: null, error: null }),
-    insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-  },
-}));
 
 describe('Audit Log Middleware', () => {
   beforeEach(() => {
@@ -164,6 +157,8 @@ describe('Audit Log Middleware', () => {
       }),
     ]);
     expect(consoleSpy).toHaveBeenCalledWith('Audit log middleware error:', error);
+    
+    consoleSpy.mockRestore();
   });
 
   it('should handle database errors gracefully', async () => {
@@ -189,6 +184,7 @@ describe('Audit Log Middleware', () => {
       'Error saving audit log:',
       dbError
     );
+    
     consoleSpy.mockRestore();
   });
-}); 
+});
