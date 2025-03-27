@@ -11,6 +11,9 @@ interface ExtendedRequest extends NextApiRequest {
   user?: {
     id: string;
     role: string;
+    app_metadata?: {
+      role: string;
+    };
   };
 }
 
@@ -116,12 +119,17 @@ describe('Audit Log Middleware', () => {
       url: '/api/users',
     });
 
-    req.user = { id: 'user123', role: 'admin' };
+    req.user = { 
+      id: 'user123', 
+      role: 'authenticated',
+      app_metadata: { role: 'admin' }
+    };
+    
     const next = jest.fn();
     const middleware = auditLog({
       customFields: (req: ExtendedRequest) => ({
         user_id: req.user?.id,
-        user_role: req.user?.role,
+        user_role: req.user?.app_metadata?.role,
       }),
     });
 
