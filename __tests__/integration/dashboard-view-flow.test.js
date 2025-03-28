@@ -22,7 +22,7 @@ describe('Dashboard and Reporting Flow', () => {
       error: null
     });
     
-    // Add rpc method to mock
+    // Mock dashboard data
     supabase.rpc = jest.fn().mockResolvedValueOnce({
       data: {
         summary: {
@@ -100,57 +100,74 @@ describe('Dashboard and Reporting Flow', () => {
     // Verify export was called
     expect(mockExportFunc).toHaveBeenCalled();
   });
-  
-  test('shows loading state while fetching data', async () => {
-    // Create a promise that won't resolve immediately
-    let resolvePromise;
-    const pendingPromise = new Promise(resolve => {
-      resolvePromise = resolve;
-    });
-    
-    // Mock slow-loading data
-    supabase.rpc.mockReturnValueOnce(pendingPromise);
-    
+
+  test('Dashboard displays interactive charts with tooltips', async () => {
     // Render dashboard
     render(<ReportingDashboard />);
     
-    // Check loading state is displayed
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    // Wait for charts to load
+    await waitFor(() => {
+      expect(screen.getByTestId('activity-chart')).toBeInTheDocument();
+    });
     
-    // Resolve the promise with data
-    resolvePromise({
-      data: {
-        summary: { totalItems: 45, itemsThisMonth: 12, activeUsers: 8 },
-        recentActivity: []
-      },
+    // Hover over chart element to show tooltip
+    await user.hover(screen.getByTestId('chart-bar-1'));
+    
+    // Verify tooltip appears with correct data
+    expect(screen.getByText(/12 items/i)).toBeInTheDocument();
+    
+    // Click on chart element to filter data
+    await user.click(screen.getByTestId('chart-bar-1'));
+    
+    // Mock filtered data response
+    supabase.from().select.mockResolvedValueOnce({
+      data: [
+        { id: 'item1', title: 'Marketing Report', created_at: '2023-03-10' }
+      ],
       error: null
     });
     
-    // Verify loading state is removed
+    // Verify filtered items appear
     await waitFor(() => {
-      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
-      expect(screen.getByText('Total Items: 45')).toBeInTheDocument();
+      expect(screen.getByText('Marketing Report')).toBeInTheDocument();
     });
   });
-  
-  test('handles error when loading dashboard data', async () => {
-    // Mock error response
-    supabase.rpc.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Error loading dashboard data' }
-    });
-    
+
+  test('User can switch between different chart types', async () => {
     // Render dashboard
     render(<ReportingDashboard />);
     
-    // Verify error message is displayed
+    // Wait for charts to load
     await waitFor(() => {
-      expect(screen.getByText(/error loading dashboard data/i)).toBeInTheDocument();
+      expect(screen.getByTestId('activity-chart')).toBeInTheDocument();
+    });
+    
+    // Initial chart should be bar chart
+    expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    
+    // Switch to line chart
+    await user.click(screen.getByLabelText(/chart type/i));
+    await user.click(screen.getByText(/line chart/i));
+    
+    // Verify chart type changed
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+      expect(screen.queryByTestId('bar-chart')).not.toBeInTheDocument();
+    });
+    
+    // Switch to pie chart
+    await user.click(screen.getByLabelText(/chart type/i));
+    await user.click(screen.getByText(/pie chart/i));
+    
+    // Verify chart type changed
+    await waitFor(() => {
+      expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
+      expect(screen.queryByTestId('line-chart')).not.toBeInTheDocument();
     });
   });
-  
-  test('can filter dashboard by different metrics', async () => {
-    // Mock initial data
+
+  test('User can filter dashboard by different metrics', async () => {
+    // Render dashboard
     render(<ReportingDashboard />);
     
     // Wait for dashboard to load
@@ -158,27 +175,103 @@ describe('Dashboard and Reporting Flow', () => {
       expect(screen.getByText('Total Items: 45')).toBeInTheDocument();
     });
     
-    // Mock data for different metric
+    // Initial view shows items metric
+    expect(screen.getByText(/items this month/i)).toBeInTheDocument();
+    
+    // Mock data for user activity metric
     supabase.rpc.mockResolvedValueOnce({
       data: {
         summary: {
-          totalItems: 45,
-          itemsThisMonth: 12,
-          activeUsers: 8,
-          averageProcessingTime: '3.5 days'
+          totalUsers: 25,
+          newUsersThisMonth: 8,
+          activeUsersPercentage: 72
+        },
+        userActivity: [
+          { date: '2023-03-10', newUsers: 3, activeUsers: 18 },
+          { date: '2023-03-11', newUsers: 2, activeUsers: 15 }
+        ]
+      },
+      error: null
+    });
+    
+    // Switch to user metrics
+    await user.click(screen.getByRole('tab', { name: /users/i }));
+    
+    // Verify user metrics are displayed
+    await waitFor(() => {
+      expect(screen.getByText('Total Users: 25')).toBeInTheDocument();
+      expect(screen.getByText('New Users This Month: 8')).toBeInTheDocument();
+      expect(screen.getByText('72%')).toBeInTheDocument(); // Active users percentage
+    });
+  });
+
+  test('Dashboard handles no data gracefully', async () => {
+    // Mock empty dashboard data
+    supabase.rpc.mockReset();
+    supabase.rpc.mockResolvedValueOnce({
+      data: {
+        summary: {
+          totalItems: 0,
+          itemsThisMonth: 0,
+          activeUsers: 0
         },
         recentActivity: []
       },
       error: null
     });
     
-    // Change metric view
-    await user.click(screen.getByLabelText(/metrics/i));
-    await user.click(screen.getByText(/processing time/i));
+    // Render dashboard
+    render(<ReportingDashboard />);
     
-    // Verify new metric is displayed
+    // Verify empty state is displayed
     await waitFor(() => {
-      expect(screen.getByText('Average Processing Time: 3.5 days')).toBeInTheDocument();
+      expect(screen.getByText('Total Items: 0')).toBeInTheDocument();
+      expect(screen.getByText(/no recent activity/i)).toBeInTheDocument();
+    });
+    
+    // Verify empty chart state
+    expect(screen.getByText(/no data to display/i)).toBeInTheDocument();
+  });
+
+  test('Dashboard handles error states appropriately', async () => {
+    // Mock error during data fetch
+    supabase.rpc.mockReset();
+    supabase.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Failed to load dashboard data' }
+    });
+    
+    // Render dashboard
+    render(<ReportingDashboard />);
+    
+    // Verify error state
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load dashboard data/i)).toBeInTheDocument();
+    });
+    
+    // Retry button should be present
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    expect(retryButton).toBeInTheDocument();
+    
+    // Mock successful data on retry
+    supabase.rpc.mockResolvedValueOnce({
+      data: {
+        summary: {
+          totalItems: 45,
+          itemsThisMonth: 12,
+          activeUsers: 8
+        },
+        recentActivity: []
+      },
+      error: null
+    });
+    
+    // Click retry
+    await user.click(retryButton);
+    
+    // Verify data loads after retry
+    await waitFor(() => {
+      expect(screen.getByText('Total Items: 45')).toBeInTheDocument();
     });
   });
 });
