@@ -179,9 +179,155 @@ describe('File Upload and Management Flow', () => {
       expect(screen.getByText('spreadsheet.xlsx')).toBeInTheDocument();
     });
     
-    // Check for appropriate file type icons (these will depend on your implementation)
+    // Check for appropriate file type icons
     expect(screen.getByTestId('pdf-icon')).toBeInTheDocument();
     expect(screen.getByTestId('image-icon')).toBeInTheDocument();
     expect(screen.getByTestId('spreadsheet-icon')).toBeInTheDocument();
+  });
+  
+  test('supports file renaming', async () => {
+    // Mock file list with one file
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'old-name.pdf', metadata: { size: 12345, mimetype: 'application/pdf' } }
+      ],
+      error: null
+    });
+    
+    // Render file manager
+    render(<FileManager />);
+    
+    // Wait for file to load
+    await waitFor(() => {
+      expect(screen.getByText('old-name.pdf')).toBeInTheDocument();
+    });
+    
+    // Click rename button
+    await user.click(screen.getByRole('button', { name: /rename/i }));
+    
+    // Enter new name
+    await user.clear(screen.getByLabelText(/new name/i));
+    await user.type(screen.getByLabelText(/new name/i), 'new-name.pdf');
+    
+    // Mock successful rename (using move)
+    supabase.storage.from().move = jest.fn().mockResolvedValueOnce({
+      data: { path: 'new-name.pdf' },
+      error: null
+    });
+    
+    // Confirm rename
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Mock updated file list
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'new-name.pdf', metadata: { size: 12345, mimetype: 'application/pdf' } }
+      ],
+      error: null
+    });
+    
+    // Verify file was renamed
+    await waitFor(() => {
+      expect(screen.getByText('new-name.pdf')).toBeInTheDocument();
+      expect(screen.queryByText('old-name.pdf')).not.toBeInTheDocument();
+    });
+  });
+  
+  test('supports folder navigation', async () => {
+    // Mock file list with folders
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'documents/', id: 'documents', metadata: { mimetype: 'inode/directory' } },
+        { name: 'images/', id: 'images', metadata: { mimetype: 'inode/directory' } },
+        { name: 'file.txt', metadata: { size: 1234, mimetype: 'text/plain' } }
+      ],
+      error: null
+    });
+    
+    // Render file manager
+    render(<FileManager />);
+    
+    // Wait for items to load
+    await waitFor(() => {
+      expect(screen.getByText('documents/')).toBeInTheDocument();
+      expect(screen.getByText('images/')).toBeInTheDocument();
+      expect(screen.getByText('file.txt')).toBeInTheDocument();
+    });
+    
+    // Mock files in documents folder
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'document1.pdf', metadata: { size: 12345, mimetype: 'application/pdf' } },
+        { name: 'document2.docx', metadata: { size: 23456, mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' } }
+      ],
+      error: null
+    });
+    
+    // Navigate to documents folder
+    await user.click(screen.getByText('documents/'));
+    
+    // Verify folder contents are displayed
+    await waitFor(() => {
+      expect(screen.getByText('document1.pdf')).toBeInTheDocument();
+      expect(screen.getByText('document2.docx')).toBeInTheDocument();
+    });
+    
+    // Verify breadcrumb navigation is updated
+    expect(screen.getByText(/documents/i)).toHaveClass('active-folder');
+    
+    // Mock root folder again
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'documents/', id: 'documents', metadata: { mimetype: 'inode/directory' } },
+        { name: 'images/', id: 'images', metadata: { mimetype: 'inode/directory' } },
+        { name: 'file.txt', metadata: { size: 1234, mimetype: 'text/plain' } }
+      ],
+      error: null
+    });
+    
+    // Navigate back to root
+    await user.click(screen.getByText(/home/i));
+    
+    // Verify root contents are displayed
+    await waitFor(() => {
+      expect(screen.getByText('documents/')).toBeInTheDocument();
+      expect(screen.getByText('images/')).toBeInTheDocument();
+      expect(screen.getByText('file.txt')).toBeInTheDocument();
+    });
+  });
+  
+  test('handles error loading files', async () => {
+    // Mock error when listing files
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Error loading files' }
+    });
+    
+    // Render file manager
+    render(<FileManager />);
+    
+    // Verify error message is displayed
+    await waitFor(() => {
+      expect(screen.getByText(/error loading files/i)).toBeInTheDocument();
+    });
+    
+    // Retry button should be present
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    
+    // Mock successful list on retry
+    supabase.storage.from().list.mockResolvedValueOnce({
+      data: [
+        { name: 'file.txt', metadata: { size: 1234, mimetype: 'text/plain' } }
+      ],
+      error: null
+    });
+    
+    // Click retry
+    await user.click(retryButton);
+    
+    // Verify files load after retry
+    await waitFor(() => {
+      expect(screen.getByText('file.txt')).toBeInTheDocument();
+    });
   });
 });
