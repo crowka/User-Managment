@@ -108,6 +108,9 @@ describe('Notification Management Flow', () => {
     await waitFor(() => {
       expect(screen.getByText(/error loading notification settings/i)).toBeInTheDocument();
     });
+    
+    // Retry button should be visible
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
   
   test('handles error when saving settings', async () => {
@@ -177,5 +180,143 @@ describe('Notification Management Flow', () => {
     // Verify defaults were applied
     expect(screen.getByLabelText(/push notifications/i)).toBeChecked();
     expect(screen.getByLabelText(/activity summaries/i)).toBeChecked();
+  });
+  
+  test('can toggle individual notification channels', async () => {
+    // Render notification settings
+    render(<NotificationSettings />);
+    
+    // Wait for settings to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email notifications/i)).toBeInTheDocument();
+    });
+    
+    // Expand notification channels section
+    await user.click(screen.getByRole('button', { name: /notification channels/i }));
+    
+    // Verify channel options are displayed
+    expect(screen.getByLabelText(/email/i)).toBeChecked();
+    expect(screen.getByLabelText(/in-app/i)).toBeChecked();
+    expect(screen.getByLabelText(/mobile/i)).not.toBeChecked();
+    
+    // Toggle mobile notifications on
+    await user.click(screen.getByLabelText(/mobile/i));
+    
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        channels: {
+          email: true,
+          in_app: true,
+          mobile: true
+        }
+      },
+      error: null
+    });
+    
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    
+    // Verify update was called with correct data
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      channels: {
+        email: true,
+        in_app: true,
+        mobile: true
+      }
+    }));
+  });
+  
+  test('supports frequency settings for different notification types', async () => {
+    // Render notification settings
+    render(<NotificationSettings />);
+    
+    // Wait for settings to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email notifications/i)).toBeInTheDocument();
+    });
+    
+    // Expand frequency settings
+    await user.click(screen.getByRole('button', { name: /notification frequency/i }));
+    
+    // Verify frequency options are displayed
+    expect(screen.getByLabelText(/system updates frequency/i)).toHaveValue('immediate');
+    expect(screen.getByLabelText(/activity summaries frequency/i)).toHaveValue('daily');
+    
+    // Change frequency for activity summaries
+    await user.selectOptions(
+      screen.getByLabelText(/activity summaries frequency/i),
+      'weekly'
+    );
+    
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        frequency: {
+          system_updates: 'immediate',
+          activity_summaries: 'weekly'
+        }
+      },
+      error: null
+    });
+    
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    
+    // Verify update was called with correct data
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      frequency: {
+        system_updates: 'immediate',
+        activity_summaries: 'weekly'
+      }
+    }));
+  });
+  
+  test('supports quiet hours configuration', async () => {
+    // Render notification settings
+    render(<NotificationSettings />);
+    
+    // Wait for settings to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email notifications/i)).toBeInTheDocument();
+    });
+    
+    // Enable quiet hours
+    await user.click(screen.getByLabelText(/enable quiet hours/i));
+    
+    // Verify quiet hours inputs appear
+    expect(screen.getByLabelText(/start time/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end time/i)).toBeInTheDocument();
+    
+    // Set quiet hours
+    await user.clear(screen.getByLabelText(/start time/i));
+    await user.type(screen.getByLabelText(/start time/i), '22:00');
+    
+    await user.clear(screen.getByLabelText(/end time/i));
+    await user.type(screen.getByLabelText(/end time/i), '07:00');
+    
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        quiet_hours: {
+          enabled: true,
+          start_time: '22:00',
+          end_time: '07:00'
+        }
+      },
+      error: null
+    });
+    
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    
+    // Verify update was called with correct data
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      quiet_hours: {
+        enabled: true,
+        start_time: '22:00',
+        end_time: '07:00'
+      }
+    }));
   });
 });
