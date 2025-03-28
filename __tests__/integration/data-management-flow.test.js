@@ -146,4 +146,104 @@ describe('Data Management Flow', () => {
       expect(screen.getByText(/error creating item/i)).toBeInTheDocument();
     });
   });
+
+  test('handles error when updating item', async () => {
+    // Mock initial data with one item
+    supabase.from().select.mockReset();
+    supabase.from().select.mockResolvedValueOnce({
+      data: [{ id: 'item-1', title: 'Original Item', description: 'Original Description' }],
+      error: null
+    });
+    
+    // Render dashboard
+    render(<Dashboard />);
+    
+    // Wait for dashboard to load with item
+    await waitFor(() => {
+      expect(screen.getByText('Original Item')).toBeInTheDocument();
+    });
+    
+    // Click edit button
+    await user.click(screen.getByRole('button', { name: /edit/i }));
+    
+    // Update form
+    await user.clear(screen.getByLabelText(/title/i));
+    await user.type(screen.getByLabelText(/title/i), 'Updated Item');
+    
+    // Mock error during update
+    supabase.from().update.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Error updating item' }
+    });
+    
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify error message is displayed
+    await waitFor(() => {
+      expect(screen.getByText(/error updating item/i)).toBeInTheDocument();
+    });
+  });
+
+  test('handles error when deleting item', async () => {
+    // Mock initial data with one item
+    supabase.from().select.mockReset();
+    supabase.from().select.mockResolvedValueOnce({
+      data: [{ id: 'item-1', title: 'Test Item', description: 'Test Description' }],
+      error: null
+    });
+    
+    // Render dashboard
+    render(<Dashboard />);
+    
+    // Wait for dashboard to load with item
+    await waitFor(() => {
+      expect(screen.getByText('Test Item')).toBeInTheDocument();
+    });
+    
+    // Click delete button
+    await user.click(screen.getByRole('button', { name: /delete/i }));
+    
+    // Confirm deletion
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+    
+    // Mock error during deletion
+    supabase.from().delete.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Error deleting item' }
+    });
+    
+    // Verify error message is displayed
+    await waitFor(() => {
+      expect(screen.getByText(/error deleting item/i)).toBeInTheDocument();
+    });
+  });
+
+  test('cancel button closes form without saving', async () => {
+    // Render dashboard
+    render(<Dashboard />);
+    
+    // Wait for dashboard to load
+    await waitFor(() => {
+      expect(screen.getByText(/no items found/i)).toBeInTheDocument();
+    });
+    
+    // Click create new button
+    await user.click(screen.getByRole('button', { name: /create new/i }));
+    
+    // Fill form
+    await user.type(screen.getByLabelText(/title/i), 'Test Item');
+    await user.type(screen.getByLabelText(/description/i), 'Test Description');
+    
+    // Click cancel button
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    
+    // Verify form is closed
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/title/i)).not.toBeInTheDocument();
+    });
+    
+    // Verify no API calls were made
+    expect(supabase.from().insert).not.toHaveBeenCalled();
+  });
 });
