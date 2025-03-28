@@ -6,8 +6,8 @@ import userEvent from '@testing-library/user-event';
 import { AccountSettings } from '../../project/src/components/account/AccountSettings';
 
 // Import and mock Supabase
-jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
-import { supabase } from '../../lib/supabase';
+jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
+import { supabase } from '../../project/src/lib/supabase';
 
 describe('Account Settings Flow', () => {
   let user;
