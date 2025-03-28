@@ -1,15 +1,15 @@
 // __tests__/middleware/auth.test.js
 
-const { createMocks } = require('node-mocks-http');
-const { withAuth } = require('../../middleware/auth');
+import { createMocks } from 'node-mocks-http';
+import { withAuth } from '../../middleware/auth';
 
-// Import our utility functions
-const { setupTestEnvironment } = require('../utils/environment-setup');
-const { createMockUser, createMockAdminUser } = require('../utils/testing-utils');
+// Import our standardized mock
+jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
+import { supabase } from '../../project/src/lib/supabase';
 
-// Import and use our standardized mock
-jest.mock('../../lib/supabase', () => require('../__mocks__/supabase'));
-const { supabase } = require('../../lib/supabase');
+// Import utility functions
+import { setupTestEnvironment } from '../utils/environment-setup';
+import { createMockUser, createMockAdminUser } from '../utils/testing-utils';
 
 describe('Auth Middleware', () => {
   // Setup test environment
