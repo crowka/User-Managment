@@ -1,246 +1,330 @@
-// __tests__/integration/export-import-flow.test.js
+// __tests__/integration/user-preferences-flow.test.js
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DataExporter } from '../../project/src/components/data/DataExporter';
-import { DataImporter } from '../../project/src/components/data/DataImporter';
+import { UserPreferences } from '../../project/src/components/user/UserPreferences';
 
 // Import our standardized mock
 jest.mock('../../project/src/lib/supabase', () => require('../__mocks__/supabase'));
 import { supabase } from '../../project/src/lib/supabase';
 
-describe('Data Export Flow', () => {
+describe('User Preferences Flow', () => {
   let user;
 
   beforeEach(() => {
     jest.clearAllMocks();
     user = userEvent.setup();
     
-    // Mock authenticated user
+    // Mock authentication
     supabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123' } },
+      data: { user: { id: 'user-123', email: 'user@example.com' } },
       error: null
     });
     
-    // Mock export data
+    // Mock current user preferences
     supabase.from().select.mockResolvedValueOnce({
-      data: [
-        { id: 'item1', title: 'First Item', content: 'Content 1' },
-        { id: 'item2', title: 'Second Item', content: 'Content 2' }
-      ],
+      data: {
+        id: 'pref-1',
+        user_id: 'user-123',
+        theme: 'light',
+        language: 'en',
+        timezone: 'America/New_York',
+        date_format: 'MM/DD/YYYY',
+        items_per_page: 25
+      },
       error: null
     });
   });
 
-  test('User can export data in different formats', async () => {
-    // Mock download functionality
-    const mockDownload = jest.fn();
-    global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-url');
-    global.URL.revokeObjectURL = jest.fn();
+  test('User can view and update preferences', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
     
-    // Mock document.createElement for the download link
-    const originalCreateElement = document.createElement;
-    document.createElement = jest.fn().mockImplementation((tag) => {
-      if (tag === 'a') {
-        return {
-          setAttribute: jest.fn(),
-          click: mockDownload,
-          remove: jest.fn()
-        };
-      }
-      return originalCreateElement(tag);
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/theme/i)).toHaveValue('light');
+      expect(screen.getByLabelText(/language/i)).toHaveValue('en');
+      expect(screen.getByLabelText(/items per page/i)).toHaveValue('25');
     });
     
-    // Render component
-    render(<DataExporter />);
+    // Update preferences
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    await user.selectOptions(screen.getByLabelText(/language/i), 'es');
+    await user.clear(screen.getByLabelText(/items per page/i));
+    await user.type(screen.getByLabelText(/items per page/i), '50');
     
-    // Select CSV format
-    await user.click(screen.getByLabelText(/csv/i));
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        id: 'pref-1',
+        user_id: 'user-123',
+        theme: 'dark',
+        language: 'es',
+        timezone: 'America/New_York',
+        date_format: 'MM/DD/YYYY',
+        items_per_page: 50
+      },
+      error: null
+    });
     
-    // Click export button
-    await user.click(screen.getByRole('button', { name: /export/i }));
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
     
-    // Verify download was triggered
-    expect(mockDownload).toHaveBeenCalled();
-    expect(global.URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    // Verify save was successful
+    await waitFor(() => {
+      expect(screen.getByText(/preferences saved/i)).toBeInTheDocument();
+    });
     
-    // Reset mock count
-    mockDownload.mockClear();
-    global.URL.createObjectURL.mockClear();
-    
-    // Select JSON format
-    await user.click(screen.getByLabelText(/json/i));
-    
-    // Click export button
-    await user.click(screen.getByRole('button', { name: /export/i }));
-    
-    // Verify download was triggered again
-    expect(mockDownload).toHaveBeenCalled();
-    expect(global.URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    
-    // Restore original document.createElement
-    document.createElement = originalCreateElement;
+    // Verify update was called with correct data
+    expect(supabase.from().update).toHaveBeenCalledWith({
+      theme: 'dark',
+      language: 'es',
+      timezone: 'America/New_York',
+      date_format: 'MM/DD/YYYY',
+      items_per_page: 50
+    });
   });
   
-  test('handles export errors gracefully', async () => {
-    // Mock export error
-    supabase.from().select.mockReset();
-    supabase.from().select.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Error fetching data for export' }
+  test('applies theme change immediately', async () => {
+    // Mock document.documentElement for theme testing
+    const documentElementClassList = {
+      add: jest.fn(),
+      remove: jest.fn(),
+      contains: jest.fn()
+    };
+    
+    Object.defineProperty(document, 'documentElement', {
+      value: { classList: documentElementClassList },
+      writable: true
     });
     
-    // Render component
-    render(<DataExporter />);
+    // Mock preference update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        theme: 'dark'
+      },
+      error: null
+    });
     
-    // Click export button
-    await user.click(screen.getByRole('button', { name: /export/i }));
+    // Render user preferences
+    render(<UserPreferences />);
+    
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/theme/i)).toHaveValue('light');
+    });
+    
+    // Change theme
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify theme was applied immediately
+    expect(documentElementClassList.remove).toHaveBeenCalledWith('light-theme');
+    expect(documentElementClassList.add).toHaveBeenCalledWith('dark-theme');
+    
+    // Restore original document.documentElement
+    jest.restoreAllMocks();
+  });
+  
+  test('validates items per page input', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
+    
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/items per page/i)).toBeInTheDocument();
+    });
+    
+    // Enter invalid value
+    await user.clear(screen.getByLabelText(/items per page/i));
+    await user.type(screen.getByLabelText(/items per page/i), '500');
+    
+    // Try to save
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify validation error
+    expect(screen.getByText(/maximum allowed is 100/i)).toBeInTheDocument();
+    
+    // Verify no update was attempted
+    expect(supabase.from().update).not.toHaveBeenCalled();
+  });
+  
+  test('handles error when saving preferences', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
+    
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/theme/i)).toBeInTheDocument();
+    });
+    
+    // Change theme
+    await user.selectOptions(screen.getByLabelText(/theme/i), 'dark');
+    
+    // Mock error during update
+    supabase.from().update.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Error saving preferences' }
+    });
+    
+    // Try to save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
     
     // Verify error message is displayed
     await waitFor(() => {
-      expect(screen.getByText(/error fetching data for export/i)).toBeInTheDocument();
+      expect(screen.getByText(/error saving preferences/i)).toBeInTheDocument();
     });
-  });
-});
-
-describe('Data Import Flow', () => {
-  let user;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    user = userEvent.setup();
-    
-    // Mock authenticated user
-    supabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123' } },
-      error: null
-    });
-  });
-
-  test('User can import CSV data', async () => {
-    // Mock successful import
-    supabase.from().upsert = jest.fn().mockResolvedValueOnce({
-      data: { count: 3 },
-      error: null
-    });
-    
-    // Render component
-    render(<DataImporter />);
-    
-    // Create CSV file
-    const csvContent = 'title,content\nImported Item 1,Content 1\nImported Item 2,Content 2\nImported Item 3,Content 3';
-    const file = new File([csvContent], 'import.csv', { type: 'text/csv' });
-    
-    // Upload file
-    await user.upload(screen.getByLabelText(/select file/i), file);
-    
-    // Click import button
-    await user.click(screen.getByRole('button', { name: /import/i }));
-    
-    // Verify success message
-    await waitFor(() => {
-      expect(screen.getByText(/successfully imported 3 items/i)).toBeInTheDocument();
-    });
-    
-    // Verify correct data format for upsert
-    expect(supabase.from().upsert).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ title: 'Imported Item 1', content: 'Content 1' }),
-        expect.objectContaining({ title: 'Imported Item 2', content: 'Content 2' }),
-        expect.objectContaining({ title: 'Imported Item 3', content: 'Content 3' })
-      ])
-    );
   });
   
-  test('User can import JSON data', async () => {
-    // Mock successful import
-    supabase.from().upsert = jest.fn().mockResolvedValueOnce({
-      data: { count: 2 },
+  test('can select timezone from dropdown', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
+    
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument();
+    });
+    
+    // Open timezone dropdown
+    await user.click(screen.getByLabelText(/timezone/i));
+    
+    // Select a different timezone
+    await user.click(screen.getByText('Europe/London'));
+    
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        timezone: 'Europe/London'
+      },
       error: null
     });
     
-    // Render component
-    render(<DataImporter />);
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
     
-    // Create JSON file
-    const jsonContent = JSON.stringify([
-      { title: 'JSON Item 1', content: 'JSON Content 1' },
-      { title: 'JSON Item 2', content: 'JSON Content 2' }
-    ]);
-    const file = new File([jsonContent], 'import.json', { type: 'application/json' });
-    
-    // Upload file
-    await user.upload(screen.getByLabelText(/select file/i), file);
-    
-    // Click import button
-    await user.click(screen.getByRole('button', { name: /import/i }));
-    
-    // Verify success message
-    await waitFor(() => {
-      expect(screen.getByText(/successfully imported 2 items/i)).toBeInTheDocument();
-    });
+    // Verify update was called with correct timezone
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      timezone: 'Europe/London'
+    }));
   });
   
-  test('validates file format', async () => {
-    // Render component
-    render(<DataImporter />);
+  test('can select date format', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
     
-    // Create invalid file
-    const file = new File(['invalid content'], 'document.pdf', { type: 'application/pdf' });
+    // Wait for preferences to load
+    await waitFor(() => {
+      expect(screen.getByLabelText(/date format/i)).toBeInTheDocument();
+    });
     
-    // Upload file
-    await user.upload(screen.getByLabelText(/select file/i), file);
+    // Select a different date format
+    await user.selectOptions(screen.getByLabelText(/date format/i), 'DD/MM/YYYY');
     
-    // Verify error message
-    expect(screen.getByText(/unsupported file format/i)).toBeInTheDocument();
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        date_format: 'DD/MM/YYYY'
+      },
+      error: null
+    });
     
-    // Import button should be disabled
-    expect(screen.getByRole('button', { name: /import/i })).toBeDisabled();
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify update was called with correct date format
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      date_format: 'DD/MM/YYYY'
+    }));
+    
+    // Verify date format preview is updated
+    expect(screen.getByText(/date format preview/i)).toHaveTextContent(/\d{2}\/\d{2}\/\d{4}/);
   });
   
-  test('handles import errors', async () => {
-    // Mock import error
-    supabase.from().upsert = jest.fn().mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Error importing data' }
-    });
+  test('can toggle advanced settings', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
     
-    // Render component
-    render(<DataImporter />);
-    
-    // Create CSV file
-    const csvContent = 'title,content\nImported Item 1,Content 1';
-    const file = new File([csvContent], 'import.csv', { type: 'text/csv' });
-    
-    // Upload file
-    await user.upload(screen.getByLabelText(/select file/i), file);
-    
-    // Click import button
-    await user.click(screen.getByRole('button', { name: /import/i }));
-    
-    // Verify error message
+    // Wait for preferences to load
     await waitFor(() => {
-      expect(screen.getByText(/error importing data/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/theme/i)).toBeInTheDocument();
     });
+    
+    // Advanced settings should be hidden initially
+    expect(screen.queryByLabelText(/keyboard shortcuts/i)).not.toBeInTheDocument();
+    
+    // Open advanced settings section
+    await user.click(screen.getByRole('button', { name: /advanced settings/i }));
+    
+    // Verify advanced settings are visible
+    expect(screen.getByLabelText(/keyboard shortcuts/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/auto save/i)).toBeInTheDocument();
+    
+    // Toggle keyboard shortcuts
+    await user.click(screen.getByLabelText(/keyboard shortcuts/i));
+    
+    // Mock successful update
+    supabase.from().update.mockResolvedValueOnce({
+      data: {
+        advanced_settings: {
+          keyboard_shortcuts: true,
+          auto_save: false
+        }
+      },
+      error: null
+    });
+    
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    // Verify update was called with correct advanced settings
+    expect(supabase.from().update).toHaveBeenCalledWith(expect.objectContaining({
+      advanced_settings: {
+        keyboard_shortcuts: true,
+        auto_save: false
+      }
+    }));
   });
   
-  test('shows preview of data before import', async () => {
-    // Render component
-    render(<DataImporter />);
+  test('can reset preferences to defaults', async () => {
+    // Render user preferences
+    render(<UserPreferences />);
     
-    // Create CSV file
-    const csvContent = 'title,content\nPreview Item 1,Preview Content 1\nPreview Item 2,Preview Content 2';
-    const file = new File([csvContent], 'preview.csv', { type: 'text/csv' });
-    
-    // Upload file
-    await user.upload(screen.getByLabelText(/select file/i), file);
-    
-    // Wait for preview to load
+    // Wait for preferences to load
     await waitFor(() => {
-      expect(screen.getByText(/data preview/i)).toBeInTheDocument();
-      expect(screen.getByText('Preview Item 1')).toBeInTheDocument();
-      expect(screen.getByText('Preview Item 2')).toBeInTheDocument();
+      expect(screen.getByLabelText(/theme/i)).toBeInTheDocument();
     });
+    
+    // Mock default preferences
+    const defaultPreferences = {
+      theme: 'system',
+      language: 'en',
+      timezone: 'UTC',
+      date_format: 'MM/DD/YYYY',
+      items_per_page: 20
+    };
+    
+    // Mock successful reset
+    supabase.from().update.mockResolvedValueOnce({
+      data: defaultPreferences,
+      error: null
+    });
+    
+    // Click reset to defaults button
+    await user.click(screen.getByRole('button', { name: /reset to defaults/i }));
+    
+    // Confirm reset
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+    
+    // Verify reset was successful
+    await waitFor(() => {
+      expect(screen.getByText(/preferences reset/i)).toBeInTheDocument();
+    });
+    
+    // Verify form fields were updated to defaults
+    expect(screen.getByLabelText(/theme/i)).toHaveValue('system');
+    expect(screen.getByLabelText(/items per page/i)).toHaveValue('20');
   });
 });
